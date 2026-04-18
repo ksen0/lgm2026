@@ -1,0 +1,62 @@
+---
+import SketchEditor from '../components/SketchEditor.astro';
+
+const snippetModules = import.meta.glob('../snippets/*.js', { eager: true, query: '?raw', import: 'default' });
+const snippets = Object.entries(snippetModules).map(([path, code]) => ({
+  name: path.split('/').pop()!.replace('.js', ''),
+  code: code as string,
+}));
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>sketch</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; background: #111; }
+      .snippet-buttons {
+        position: fixed;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20;
+        display: flex;
+        gap: 0.75rem;
+      }
+      .snippet-buttons button {
+        padding: 0.4rem 1rem;
+        background: rgba(10,10,10,0.75);
+        color: #eee;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 4px;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        font-size: 0.85rem;
+        transition: background 0.15s;
+      }
+      .snippet-buttons button:hover { background: rgba(255,255,255,0.15); }
+      
+  .snippet-buttons {
+  bottom: 4rem;  /* was 1.5rem */
+}
+    </style>
+  </head>
+  <body>
+    <SketchEditor background={true} />
+
+    <div class="snippet-buttons">
+      {snippets.map(({ name, code }) => (
+        <button data-code={code}>{name}</button>
+      ))}
+    </div>
+
+    <script>
+      document.querySelectorAll('.snippet-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = (btn as HTMLElement).dataset.code!;
+          (window as any).loadSnippet?.(code);
+        });
+      });
+    </script>
+  </body>
+</html>

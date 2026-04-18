@@ -1,0 +1,179 @@
+---
+const { background = false } = Astro.props;
+---
+
+<div class={`sketch-wrap ${background ? 'bg-mode' : ''}`}>
+<div id="p5-host"></div>
+<div class="editor-tab" id="editor-tab">&nbsp;</div>
+
+  <div class="editor-panel">
+    <div id="codemirror-host"></div>
+    <button id="run-btn">Run</button>
+  </div>
+</div>
+
+<script>
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
+import p5Source from '/node_modules/p5/lib/p5.min.js?raw';
+
+const DEFAULT_CODE = `function setup() {
+  createCanvas(400, 400);
+  describe('circle follows mouse');
+}
+function draw() {
+  background(20);
+  circle(mouseX, mouseY, 100);
+}`;
+
+function runSketch(code: string, w = 400, h = 400) {
+  const host = document.getElementById('p5-host')!;
+  host.innerHTML = '';
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = `border:none;width:${w}px;height:${h}px;`;
+  iframe.srcdoc = `<!DOCTYPE html><html><body style="margin:0">
+    <script>${p5Source}<\/script>
+    <script>${code}<\/script>
+    </body></html>`;
+  host.appendChild(iframe);
+}
+
+const state = EditorState.create({
+  doc: DEFAULT_CODE,
+  extensions: [basicSetup, javascript(), oneDark],
+});
+
+const view = new EditorView({
+  state,
+  parent: document.getElementById('codemirror-host')!,
+});
+
+const isBg = document.querySelector('.bg-mode') !== null;
+const W = isBg ? window.innerWidth : 400;
+const H = isBg ? window.innerHeight : 400;
+
+document.getElementById('run-btn')!.addEventListener('click', () => {
+  runSketch(view.state.doc.toString(), W, H);
+  panel?.classList.remove('active');
+});
+
+runSketch(DEFAULT_CODE, W, H);
+
+(window as any).loadSnippet = (code: string) => {
+  view.dispatch({
+    changes: { from: 0, to: view.state.doc.length, insert: code }
+  });
+  runSketch(code, W, H);
+  panel?.classList.remove('active');
+};
+
+
+const tab = document.getElementById('editor-tab');
+const panel = document.querySelector('.editor-panel');
+
+tab?.addEventListener('click', () => {
+  panel?.classList.add('active');
+  view.focus();
+});
+
+view.dom.addEventListener('blur', (e) => {
+  // only deactivate if focus left the panel entirely
+  setTimeout(() => {
+    if (!panel?.contains(document.activeElement)) {
+      panel?.classList.remove('active');
+    }
+  }, 100);
+});
+
+</script>
+
+<style>
+  .sketch-wrap {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  /* Background mode: canvas fills viewport, editor floats */
+  .bg-mode {
+    display: block;
+  }
+.bg-mode #p5-host {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+.bg-mode #p5-host iframe {
+  position: fixed;
+  inset: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+.bg-mode .editor-panel {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 10;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+  background: rgba(10, 10, 10, 0.85);   /* darker base */
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.bg-mode .editor-panel {
+  pointer-events: none;   /* pass mouse through when idle */
+}
+.bg-mode .editor-panel.active {
+  pointer-events: auto;
+  opacity: 1;
+}
+/* small always-clickable tab */
+.bg-mode .editor-tab {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: 11;
+  pointer-events: auto;
+  background: rgba(10,10,10,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  color: #eee;
+  font-size: 0.75rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+
+/* force CM text to never go transparent */
+.bg-mode .editor-panel .cm-editor {
+  color: inherit;
+}
+
+  /* Landing mode */
+  .editor-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  #run-btn {
+    align-self: flex-end;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    border: 1px solid #555;
+    background: #222;
+    color: #fff;
+    border-radius: 4px;
+
+  }
+  #run-btn:hover { background: #444; }
+
+</style>

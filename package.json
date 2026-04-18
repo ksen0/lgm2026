@@ -1,0 +1,18 @@
+{
+  "name": "p5-sketch-site",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "node scripts/fetch-assets.js && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.16.0",
+    "p5": "^2.2.3",
+    "codemirror": "^6.0.1",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.35.0",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/theme-one-dark": "^6.1.2"
+   }
+}
