@@ -4,7 +4,7 @@ import { join } from 'path';
 const assets = join('public', 'fetched-assets');
 mkdirSync(assets, { recursive: true });
 
-const url = 'https://github.com/processing/p5.js/files/contributors.png';
+const url = 'https://raw.githubusercontent.com/processing/p5.js/main/contributors.png';
 console.log('Fetching contributors image...');
 const res = await fetch(url);
 if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);

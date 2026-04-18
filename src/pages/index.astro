@@ -20,12 +20,29 @@ import SketchEditor from '../components/SketchEditor.astro';
         border-radius: 4px;
       }
       a.enter:hover { background: #eee; color: #111; }
+      .contributors {
+        margin-top: 3rem;
+        opacity: 0.75;
+      }
+      .contributors img {
+        max-width: 100%;
+        border-radius: 6px;
+      }
+      .contributors p {
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+      }
     </style>
   </head>
   <body>
     <h1>p5 v2 @ lgm 2026</h1>
     <p>What is p5? Drawing with code, JavaScript, access and inclusion, all-contributors</p>
     <SketchEditor />
-    <a class="enter" href="sketch">enter →</a>
+    <a class="enter" href="sketch">demo →</a>
+    <div class="contributors">
+      <p>p5.js contributors</p>
+      <img src="/fetched-assets/contributors.png" alt="p5.js contributors" />
+    </div>
   </body>
 </html>
