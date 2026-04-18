@@ -1,0 +1,113 @@
+<div id="console-wrap">
+  <button id="console-toggle">/</button>
+  <div id="console-drawer">
+    <div id="console-output"></div>
+  </div>
+</div>
+
+<script>
+  const output = document.getElementById('console-output')!;
+  const drawer = document.getElementById('console-drawer')!;
+  const toggle = document.getElementById('console-toggle')!;
+
+  let open = false;
+  toggle.addEventListener('click', () => {
+    open = !open;
+    drawer.classList.toggle('visible', open);
+  });
+
+  function addLine(type: string, args: any[]) {
+  const line = document.createElement('div');
+  line.className = `log-line log-${type}`;
+  line.textContent = args.map(a => {
+    try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
+    catch { return String(a); }
+  }).join(' ');
+  output.appendChild(line);
+
+  // keep only last 20 lines
+  while (output.children.length > 20) {
+    output.removeChild(output.firstChild!);
+  }
+
+  // autoscroll only if drawer is open
+  if (open) output.scrollTop = output.scrollHeight;
+
+  toggle.classList.add('has-content'); 
+  toggle.classList.add('flash');
+  setTimeout(() => toggle.classList.remove('flash'), 300);
+
+}
+
+  // expose so SketchEditor can patch the iframe's console
+  (window as any).__consoleLog   = (...a: any[]) => addLine('log', a);
+  (window as any).__consoleWarn  = (...a: any[]) => addLine('warn', a);
+  (window as any).__consoleError = (...a: any[]) => addLine('error', a);
+
+  // clear on new sketch run
+  (window as any).__consoleClear = () => { 
+    toggle.classList.remove('has-content'); 
+output.innerHTML = ''; };
+</script>
+
+<style>
+  #console-wrap {
+    position: fixed;
+    bottom: 4rem;
+    right: 1.5rem;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    pointer-events: none;
+  }
+
+#console-drawer {
+  display: none;
+  pointer-events: auto;
+  width: 340px;
+  max-height: 60vh;      /* was 220px — much more room */
+  overflow-y: auto;
+  background: rgba(10, 10, 10, 0.88);
+  border: 1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.5);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+
+.log-line {
+  padding: 0.35rem 0.25rem;   /* more vertical space */
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: #ffffff;             /* full white */
+  line-height: 1.5;
+  word-break: break-all;      /* long lines don't overflow */
+}
+  #console-drawer.visible { display: block; }
+
+  .log-line { padding: 0.15rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); color: #ccc; }
+  .log-warn  { color: #f0c040; }
+  .log-error { color: #f05050; }
+
+#console-toggle {
+  pointer-events: auto;
+  background: rgba(10,10,10,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: #aaa;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: color 0.15s, background 0.15s, opacity 0.15s;
+  opacity: 0.1;        /* dim when no content */
+}
+#console-toggle.has-content {
+  opacity: 1;
+}
+#console-toggle:hover { color: #fff; background: rgba(255,255,255,0.12); }
+#console-toggle.flash { color: #fff; }
+</style>

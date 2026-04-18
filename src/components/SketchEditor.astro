@@ -1,16 +1,21 @@
 ---
+import SketchConsole from './SketchConsole.astro';
 const { background = false } = Astro.props;
 ---
 
 <div class={`sketch-wrap ${background ? 'bg-mode' : ''}`}>
 <div id="p5-host"></div>
-<div class="editor-tab" id="editor-tab">&nbsp;</div>
 
   <div class="editor-panel">
     <div id="codemirror-host"></div>
-    <button id="run-btn">Run</button>
+    <button id="run-btn">run</button>
   </div>
+
+    <SketchConsole />
+
 </div>
+<div id="sketch-stats">FPS: -- | F: --</div>
+
 
 <script>
 import { EditorState } from '@codemirror/state';
@@ -30,11 +35,59 @@ function draw() {
 }`;
 
 function runSketch(code: string, w = 400, h = 400) {
+  (window as any).__consoleClear?.();
   const host = document.getElementById('p5-host')!;
   host.innerHTML = '';
   const iframe = document.createElement('iframe');
   iframe.style.cssText = `border:none;width:${w}px;height:${h}px;`;
+
+const bridge = `<script>
+  const _p = window.parent;
+  const _log   = console.log.bind(console);
+  const _warn  = console.warn.bind(console);
+  const _error = console.error.bind(console);
+  const _info  = console.info.bind(console);
+  const _debug = console.debug.bind(console);
+  const _table = console.table.bind(console);
+
+  console.log   = (...a) => { _log(...a);   _p.__consoleLog?.(...a); };
+  console.warn  = (...a) => { _warn(...a);  _p.__consoleWarn?.(...a); };
+  console.error = (...a) => { _error(...a); _p.__consoleError?.(...a); };
+  console.info  = (...a) => { _info(...a);  _p.__consoleLog?.(...a); };
+  console.debug = (...a) => { _debug(...a); _p.__consoleLog?.(...a); };
+  console.table = (...a) => { _table(...a); _p.__consoleLog?.(JSON.stringify(a[0], null, 2)); };
+
+  window.onerror = (msg, src, line, col, err) => {
+    const text = (err ? err.toString() : msg) + (line ? ' (line ' + line + ')' : '');
+    _error(text);
+    _p.__consoleError?.(text);
+    return false;
+  };
+  window.addEventListener('unhandledrejection', (e) => {
+    const text = e.reason?.toString?.() ?? String(e.reason);
+    _error(text);
+    _p.__consoleError?.(text);
+  });
+
+  // catch p5 errors which use a custom error handler
+  window.addEventListener('error', (e) => {
+    if (e.error && e.error !== window._lastReportedError) {
+      window._lastReportedError = e.error;
+      const text = e.error.toString() + (e.lineno ? ' (line ' + e.lineno + ')' : '');
+      _p.__consoleError?.(text);
+    }
+  });
+
+  setInterval(() => {
+  try {
+    _p.__sketchStats?.({ fps: Math.round(frameRate()), frame: frameCount });
+  } catch(e) {}
+}, 100);
+
+<\/script>`;
+
   iframe.srcdoc = `<!DOCTYPE html><html><body style="margin:0">
+    ${bridge}
     <script>${p5Source}<\/script>
     <script>${code}<\/script>
     </body></html>`;
@@ -55,10 +108,6 @@ const isBg = document.querySelector('.bg-mode') !== null;
 const W = isBg ? window.innerWidth : 400;
 const H = isBg ? window.innerHeight : 400;
 
-document.getElementById('run-btn')!.addEventListener('click', () => {
-  runSketch(view.state.doc.toString(), W, H);
-  panel?.classList.remove('active');
-});
 
 runSketch(DEFAULT_CODE, W, H);
 
@@ -68,26 +117,44 @@ runSketch(DEFAULT_CODE, W, H);
   });
   runSketch(code, W, H);
   panel?.classList.remove('active');
+  runBtn.textContent = 'edit';
 };
 
+const stats = document.getElementById('sketch-stats')!;
+(window as any).__sketchStats = ({ fps, frame }: { fps: number, frame: number }) => {
+  stats.textContent = `FPS: ${fps} | F: ${frame}`;
+};
 
-const tab = document.getElementById('editor-tab');
 const panel = document.querySelector('.editor-panel');
+const runBtn = document.getElementById('run-btn')!;
 
-tab?.addEventListener('click', () => {
-  panel?.classList.add('active');
-  view.focus();
+if (isBg) runBtn.textContent = 'edit';
+
+runBtn.addEventListener('click', () => {
+  if (isBg && !panel?.classList.contains('active')) {
+    // first click = activate editor
+    panel?.classList.add('active');
+    runBtn.textContent = 'run';
+    view.focus();
+  } else {
+    // already active = run sketch
+    runSketch(view.state.doc.toString(), W, H);
+    if (isBg) {
+      panel?.classList.remove('active');
+      runBtn.textContent = 'edit';
+      runBtn.blur();
+    }
+  }
 });
 
-view.dom.addEventListener('blur', (e) => {
-  // only deactivate if focus left the panel entirely
+view.dom.addEventListener('blur', () => {
   setTimeout(() => {
     if (!panel?.contains(document.activeElement)) {
       panel?.classList.remove('active');
+      if (isBg) runBtn.textContent = 'edit';
     }
   }, 100);
 });
-
 </script>
 
 <style>
@@ -96,7 +163,16 @@ view.dom.addEventListener('blur', (e) => {
     gap: 1rem;
     align-items: flex-start;
   }
-
+#sketch-stats {
+  position: fixed;
+  top: 0.75rem;
+  right: 1rem;
+  z-index: 20;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+  pointer-events: none;
+}
   /* Background mode: canvas fills viewport, editor floats */
   .bg-mode {
     display: block;
@@ -175,5 +251,8 @@ view.dom.addEventListener('blur', (e) => {
 
   }
   #run-btn:hover { background: #444; }
-
+.bg-mode #run-btn {
+  pointer-events: auto;
+  align-self: flex-end;
+}
 </style>
