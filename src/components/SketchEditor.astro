@@ -82,6 +82,10 @@ const bridge = `<script>
   try {
     _p.__sketchStats?.({ fps: Math.round(frameRate()), frame: frameCount });
   } catch(e) {}
+ 
+  const c = document.querySelector('canvas');
+  if (c) _p.postMessage({ type: 'sketchSize', w: c.offsetWidth, h: c.offsetHeight }, '*');
+
 }, 100);
 
 <\/script>`;
@@ -96,7 +100,12 @@ const bridge = `<script>
 
 const state = EditorState.create({
   doc: DEFAULT_CODE,
-  extensions: [basicSetup, javascript(), oneDark],
+  extensions: [
+    basicSetup,
+    javascript(),
+    oneDark,
+    EditorView.lineWrapping,  // ← add here
+  ],
 });
 
 const view = new EditorView({
@@ -105,9 +114,8 @@ const view = new EditorView({
 });
 
 const isBg = document.querySelector('.bg-mode') !== null;
-const W = isBg ? window.innerWidth : 400;
-const H = isBg ? window.innerHeight : 400;
-
+const W = isBg ? 100 : 400;
+const H = isBg ? 100 : 400;
 
 runSketch(DEFAULT_CODE, W, H);
 
@@ -155,6 +163,15 @@ view.dom.addEventListener('blur', () => {
     }
   }, 100);
 });
+
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'sketchSize' && isBg) {
+    const iframe = document.querySelector('#p5-host iframe') as HTMLIFrameElement;
+    if (!iframe) return;
+    iframe.style.width  = e.data.w + 'px';
+    iframe.style.height = e.data.h + 'px';
+  }
+});
 </script>
 
 <style>
@@ -179,15 +196,14 @@ view.dom.addEventListener('blur', () => {
   }
 .bg-mode #p5-host {
   position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
+  bottom: 0;
+  right: 0;
+  width: auto;
+  height: auto;
 }
 .bg-mode #p5-host iframe {
-  position: fixed;
-  inset: 0;
-  width: 100vw !important;
-  height: 100vh !important;
+  display: block;
+  border: none;
 }
 .bg-mode .editor-panel {
   position: fixed;
@@ -200,7 +216,24 @@ view.dom.addEventListener('blur', () => {
   backdrop-filter: blur(8px);
   border-radius: 8px;
   padding: 0.75rem;
+width: min(80ch, 90vw);          /* ← max ~80 chars wide */
+  height: 50vh;                    /* ← always half viewport */
+  
   box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.bg-mode #codemirror-host {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;        /* required for flex children to shrink */
+}
+
+.bg-mode #codemirror-host .cm-editor {
+  height: 100%;
+}
+
+.bg-mode #codemirror-host .cm-scroller {
+  overflow-y: auto;
 }
 
 .bg-mode .editor-panel {
@@ -255,4 +288,6 @@ view.dom.addEventListener('blur', () => {
   pointer-events: auto;
   align-self: flex-end;
 }
+
+
 </style>

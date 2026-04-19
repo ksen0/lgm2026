@@ -1,0 +1,106 @@
+---
+import SketchEditor from '../components/SketchEditor.astro';
+
+const { frontmatter } = Astro.props;
+const slides = frontmatter.slides ?? [];
+
+const snippetModules = import.meta.glob('../snippets/*.js', { eager: true, query: '?raw', import: 'default' });
+
+const resolved = slides.map(({ snippet, description }: { snippet: string, description: string }) => ({
+  name: snippet,
+  description,
+  code: snippetModules[`../snippets/${snippet}.js`] as string ?? '',
+}));
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>sketch</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; background: #111; }
+
+      .slide-description {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: opacity 0.5s ease;
+      }
+      .slide-description span {
+        font-family: sans-serif;
+        font-size: clamp(2rem, 6vw, 5rem);
+        font-weight: 700;
+        color: rgba(255,255,255,0.85);
+        text-align: center;
+        padding: 0 2rem;
+        text-shadow: 0 2px 30px rgba(0,0,0,0.6);
+        max-width: 80vw;
+      }
+      .slide-description.hidden { opacity: 0; }
+
+      .snippet-buttons {
+        position: fixed;
+        bottom: 4rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20;
+        display: flex;
+        gap: 0.75rem;
+      }
+      .snippet-buttons button {
+        padding: 0.4rem 1rem;
+        background: rgba(10,10,10,0.75);
+        color: #eee;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 4px;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        font-size: 0.85rem;
+        transition: background 0.15s;
+      }
+      .snippet-buttons button:hover { background: rgba(255,255,255,0.15); }
+      .snippet-buttons button.active { border-color: rgba(255,255,255,0.6); color: #fff; }
+    </style>
+  </head>
+  <body>
+    <SketchEditor background={true} />
+
+    <div class="slide-description hidden" id="slide-desc">
+      <span id="slide-desc-text"></span>
+    </div>
+
+    <div class="snippet-buttons">
+      {resolved.map(({ name, code, description }) => (
+        <button data-code={code} data-description={description}>{name}</button>
+      ))}
+    </div>
+
+    <script>
+      const desc = document.getElementById('slide-desc')!;
+      const descText = document.getElementById('slide-desc-text')!;
+      let hideTimer: ReturnType<typeof setTimeout>;
+
+      function showDescription(text: string) {
+        descText.textContent = text;
+        desc.classList.remove('hidden');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => desc.classList.add('hidden'), 2500);
+      }
+
+      document.querySelectorAll('.snippet-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = (btn as HTMLElement).dataset.code!;
+          const description = (btn as HTMLElement).dataset.description!;
+          document.querySelectorAll('.snippet-buttons button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          (window as any).loadSnippet?.(code);
+          if (description) showDescription(description);
+        });
+      });
+    </script>
+  </body>
+</html>
