@@ -1,4 +1,5 @@
-Game of Life: Inspired by Dan Shiffman's "Nature of Code". Revised by Caleb Foss. From 2024 onwards, edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
+// Uses the Game of Life example with colors updated for this talk.
+// Game of Life: Inspired by Dan Shiffman's "Nature of Code". Revised by Caleb Foss. From 2024 onwards, edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
 
 
 
@@ -11,7 +12,7 @@ let nextCells = [];
 function setup() {
   // Set simulation framerate to 10 to avoid flickering
   frameRate(10);
-  createCanvas(720, 400);
+  createCanvas(windowWidth, windowHeight);
 
   // Calculate columns and rows
   columnCount = floor(width / cellSize);
@@ -29,7 +30,9 @@ function setup() {
     nextCells[column] = [];
   }
 
-  noLoop();
+  randomizeBoard();
+  loop();
+
   describe(
     "Grid of squares that switch between white and black, demonstrating a simulation of John Conway's Game of Life. When clicked, the simulation resets."
   );

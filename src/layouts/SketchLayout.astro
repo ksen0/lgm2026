@@ -18,84 +18,75 @@ const resolved = slides.map(({ snippet, description }: { snippet: string, descri
     <meta charset="utf-8" />
     <title>sketch</title>
     <style>
+      :root { --panel-w: min(640px, 90vw); }
+
       html, body { margin: 0; padding: 0; overflow: hidden; background: #111; }
 
-      .slide-description {
+      #slide-desc {
         position: fixed;
-        inset: 0;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        bottom: 50vh;
+        left: 0;
+        width: var(--panel-w);
+        max-width: var(--panel-w);
+        box-sizing: border-box;
+        overflow: hidden;
+        z-index: 15;
         pointer-events: none;
-        transition: opacity 0.5s ease;
-      }
-      .slide-description span {
         font-family: sans-serif;
-        font-size: clamp(2rem, 6vw, 5rem);
+        font-size: clamp(1rem, 2.5vw, 2rem);
         font-weight: 700;
-        color: rgba(255,255,255,0.85);
-        text-align: center;
-        padding: 0 2rem;
-        text-shadow: 0 2px 30px rgba(0,0,0,0.6);
-        max-width: 80vw;
+        color: #fff;
+        -webkit-text-stroke: 3px black;
+        paint-order: stroke fill;
+        padding: 0.4rem 0.5rem;
+        white-space: normal;
+        word-break: break-word;
       }
-      .slide-description.hidden { opacity: 0; }
 
-      .snippet-buttons {
-        position: fixed;
-        bottom: 4rem;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 20;
+      .snippet-btns {
         display: flex;
-        gap: 0.75rem;
+        flex: 1;
+        gap: 0;
       }
-      .snippet-buttons button {
-        padding: 0.4rem 1rem;
-        background: rgba(10,10,10,0.75);
-        color: #eee;
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 4px;
+      .snippet-btns button {
+        padding: 0.2rem 0.6rem;
+        background: transparent;
+        color: #666;
+        border: none;
+        border-right: 1px solid rgba(255,255,255,0.08);
         cursor: pointer;
-        backdrop-filter: blur(6px);
-        font-size: 0.85rem;
-        transition: background 0.15s;
+        font-size: 0.8rem;
+        font-family: monospace;
+        transition: color 0.15s;
+        pointer-events: auto;
       }
-      .snippet-buttons button:hover { background: rgba(255,255,255,0.15); }
-      .snippet-buttons button.active { border-color: rgba(255,255,255,0.6); color: #fff; }
+      .snippet-btns button:hover { color: #eee; }
+      .snippet-btns button.active { color: #fff; }
     </style>
   </head>
   <body>
-    <SketchEditor background={true} />
+    <div id="slide-desc"></div>
 
-    <div class="slide-description hidden" id="slide-desc">
-      <span id="slide-desc-text"></span>
-    </div>
-
-    <div class="snippet-buttons">
-      {resolved.map(({ name, code, description }) => (
-        <button data-code={code} data-description={description}>{name}</button>
-      ))}
-    </div>
+    <SketchEditor background={true}>
+      <div slot="actions" class="snippet-btns">
+        {resolved.map(({ name, code, description }) => (
+          <button data-code={code} data-description={description}>{name}</button>
+        ))}
+      </div>
+    </SketchEditor>
 
     <script>
       const desc = document.getElementById('slide-desc')!;
-      const descText = document.getElementById('slide-desc-text')!;
-      let hideTimer: ReturnType<typeof setTimeout>;
 
       function showDescription(text: string) {
-        descText.textContent = text;
-        desc.classList.remove('hidden');
-        clearTimeout(hideTimer);
-        hideTimer = setTimeout(() => desc.classList.add('hidden'), 2500);
+        desc.textContent = text;
       }
 
-      document.querySelectorAll('.snippet-buttons button').forEach(btn => {
+      document.querySelectorAll('.snippet-btns button').forEach(btn => {
         btn.addEventListener('click', () => {
           const code = (btn as HTMLElement).dataset.code!;
-          const description = (btn as HTMLElement).dataset.description!;
-          document.querySelectorAll('.snippet-buttons button').forEach(b => b.classList.remove('active'));
+          const description = (btn as HTMLElement).dataset.description ?? '';
+          document.querySelectorAll('.snippet-btns button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           (window as any).loadSnippet?.(code);
           if (description) showDescription(description);

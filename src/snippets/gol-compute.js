@@ -1,13 +1,18 @@
-// noprotect
+// Note: this is using an experimental, unreleased build
+// https://raw.esm.sh/pr/p5@5a95725/lib/p5.js
+// https://raw.esm.sh/pr/p5@5a95725/lib/p5.webgpu.js
+
 let cells;
 let nextCells;
 let gameShader;
 let displayShader;
-const W = 100;
-const H = 100;
+let W = 0;
+let H = 0;
 
 async function setup() {
-  await createCanvas(100, 100, WEBGPU);
+  W = windowWidth;
+  H = windowHeight;
+  await createCanvas(windowWidth, windowHeight, WEBGPU);
 
   let initial = new Float32Array(W * H);
   for (let i = 0; i < initial.length; i++) {

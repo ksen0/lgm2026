@@ -1,7 +1,6 @@
 // Filter Shader: Creared by Dave Pagurek. Edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
 
 
-
 let video;
 let displaceColors;
 
@@ -30,9 +29,10 @@ void main() {
 `;
 
 function setup() {
-  createCanvas(700, 400, WEBGL);
+  createCanvas(windowWidth, windowHeight, WEBGL);
+  pixelDensity(1);
   video = createVideo(
-    'https://upload.wikimedia.org/wikipedia/commons/d/d2/DiagonalCrosswalkYongeDundas.webm'
+    '../../public/DiagonalCrosswalkYongeDundas.webm'
   );
   video.volume(0);
   video.hide();
