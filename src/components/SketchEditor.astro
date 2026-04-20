@@ -27,6 +27,7 @@ import { basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import p5Source from '/node_modules/p5/lib/p5.min.js?raw';
+import p5WebgpuSource from '/node_modules/p5/lib/p5.webgpu.js?raw';
 
 const DEFAULT_CODE = `function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -46,10 +47,10 @@ const host = document.getElementById('p5-host')!;
 const base = host.dataset.base ?? '';
 
 function p5Scripts(code: string): string {
-  if (code.includes('WEBGPU')) {
+  if (code.includes('compute(')) {
     return `<script src="${base}/rc-p5.js"><\/script><script src="${base}/rc-p5.webgpu.js"><\/script>`;
   }
-  return `<script>${p5Source}<\/script>`;
+  return `<script>${p5Source}<\/script><script>${p5WebgpuSource}<\/script>`;
 }
 
 function runSketch(code: string, w = 400, h = 400) {
@@ -195,6 +196,7 @@ window.addEventListener('message', (e) => {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding:30px;
   }
 
   .btn-row {
@@ -223,7 +225,7 @@ window.addEventListener('message', (e) => {
     right: 1rem;
     z-index: 20;
     font-family: monospace;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: rgba(255,255,255,0.5);
     pointer-events: none;
   }
@@ -248,17 +250,20 @@ window.addEventListener('message', (e) => {
   }
 
   .bg-mode .editor-panel {
+box-sizing: border-box;
     position: fixed;
     bottom: 0;
     left: 0;
     z-index: 10;
-    width: var(--panel-w);
+
+    width: 50%;
+    max-width: 800px;
     height: 50vh;
     display: flex;
     flex-direction: column;
-    background: rgba(10,10,10,0.9);
+    background: rgba(0,0,0,0.9);
     backdrop-filter: blur(8px);
-    opacity: 0.35;
+    opacity: 0.4;
     pointer-events: none;
     transition: opacity 0.2s ease;
   }

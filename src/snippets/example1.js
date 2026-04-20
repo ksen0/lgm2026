@@ -1,8 +1,9 @@
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  describe('circle follows mouse');
+  createCanvas(400, 400);
+  background(255);
+  describe("A white circle with black outline that tracks the mouse cursor as it moves.");
 }
+
 function draw() {
-  background(20);
-  circle(mouseX, mouseY, 100);
+  circle(mouseX, mouseY, 200);
 }

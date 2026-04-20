@@ -1,0 +1,4 @@
+todo
+
+IMAGE ROTATION THINGY WHERE IMAGES ARE DRAWN AT RANDOM ON TOP AND ITS HALF THE 
+createCanvas(windowWidth/2, windowHeight)

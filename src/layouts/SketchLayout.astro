@@ -1,50 +1,97 @@
 ---
 import SketchEditor from '../components/SketchEditor.astro';
+import p5Source from '/node_modules/p5/lib/p5.min.js?raw';
 
 const { frontmatter } = Astro.props;
-const { slides = [], defaultSnippet = '', defaultDescription = '' } = frontmatter;
+const { slides = [] } = frontmatter;
 
 const snippetModules = import.meta.glob('../snippets/*.js', { eager: true, query: '?raw', import: 'default' });
 
-const resolved = slides.map(({ snippet, description }: { snippet: string, description: string }) => ({
+const resolved = slides.map(({ snippet, description, url }: { snippet: string, description: string, url?: string }) => ({
   name: snippet,
-  description,
+  description: description ?? '',
+  url: url ?? '',
   code: snippetModules[`../snippets/${snippet}.js`] as string ?? '',
 }));
 
-const defaultCode = snippetModules[`../snippets/${defaultSnippet}.js`] as string ?? '';
+const first = resolved[0] ?? { name: '', code: '', description: '', url: '' };
+
+const qrCode = `
+  let qrImg;
+
+  async function loadQr(url) {
+    clear();
+    qrImg = null;
+    if (!url) return;
+    let apiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(url);
+    qrImg = await loadImage(apiUrl);
+    redraw();
+  }
+
+  function setup() {
+    createCanvas(200, 200);
+    noLoop();
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'qrUrl') loadQr(e.data.url);
+    });
+  }
+
+  function draw() {
+    clear();
+    if (qrImg) image(qrImg, 10, 10, 180, 180);
+  }`;
+
+const qrSrcdoc = `<!DOCTYPE html><html><body style="margin:0">
+<script>${p5Source}<\/script>
+<script>${qrCode}<\/script>
+</body></html>`;
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>sketch</title>
+    <title>p5.js @ lgm 2026</title>
     <style>
-      :root { --panel-w: min(640px, 90vw); }
-
       html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+
+      #qr-frame {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 200px;
+        height: 200px;
+        z-index: -20;
+        border: none;
+        pointer-events: none;
+        display: none;
+      }
+      #qr-frame.visible { display: block; }
 
       #slide-desc {
         position: fixed;
-        bottom: 50vh;
+        top:0px;
+        height: 50vh;
+        padding: 30px;
         left: 0;
-        width: var(--panel-w);
-        max-width: var(--panel-w);
+        width: 50%;
+        max-width: 800px;
         box-sizing: border-box;
         overflow: hidden;
         z-index: 15;
-        pointer-events: none;
         font-family: sans-serif;
-        font-size: clamp(1rem, 2.5vw, 2rem);
-        font-weight: 700;
+        font-size: 1.2em;
+        font-weight: 500;
         color: #fff;
-        -webkit-text-stroke: 3px black;
-        paint-order: stroke fill;
-        padding: 0.4rem 0.5rem;
+        /*-webkit-text-stroke: 3px black;
+        paint-order: stroke fill;*/
+        background:rgb(0, 0, 0, 0.8);
         white-space: normal;
         word-break: break-word;
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: flex-end;
       }
-
       .snippet-btns {
         display: flex;
         flex: 1;
@@ -67,44 +114,55 @@ const defaultCode = snippetModules[`../snippets/${defaultSnippet}.js`] as string
     </style>
   </head>
   <body>
+    <iframe id="qr-frame" srcdoc={qrSrcdoc}></iframe>
+
     <div id="slide-desc"></div>
 
     <SketchEditor background={true}>
       <div slot="actions" class="snippet-btns">
-        {resolved.map(({ name, code, description }) => (
-          <button data-code={code} data-description={description}>{name}</button>
+        {resolved.map(({ name, code, description, url }) => (
+          <button data-code={code} data-description={description} data-url={url}>{name}</button>
         ))}
       </div>
     </SketchEditor>
 
-    <script define:vars={{ defaultCode, defaultDescription, defaultSnippet }}>
+    <script define:vars={{ firstCode: first.code, firstDescription: first.description, firstName: first.name, firstUrl: first.url }}>
       const desc = document.getElementById('slide-desc');
+      const qf = document.getElementById('qr-frame');
 
       function showDescription(text) {
-        desc.textContent = text;
+        desc.innerHTML = text;
       }
+
+      function loadQr(url) {
+        qf.contentWindow.postMessage({ type: 'qrUrl', url }, '*');
+        if (url) qf.classList.add('visible');
+        else qf.classList.remove('visible');
+      }
+
+      qf.addEventListener('load', () => {
+        if (firstUrl) loadQr(firstUrl);
+      });
 
       document.querySelectorAll('.snippet-btns button').forEach(btn => {
         btn.addEventListener('click', () => {
           const code = btn.dataset.code;
           const description = btn.dataset.description ?? '';
+          const url = btn.dataset.url ?? '';
           document.querySelectorAll('.snippet-btns button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           window.loadSnippet?.(code);
           if (description) showDescription(description);
+          loadQr(url);
         });
       });
 
-      // load default on start
       window.addEventListener('load', () => {
-        if (defaultCode) {
-          window.loadSnippet?.(defaultCode);
-          // mark matching button active if it's also in the slides list
-          document.querySelectorAll('.snippet-btns button').forEach(btn => {
-            if (btn.textContent?.trim() === defaultSnippet) btn.classList.add('active');
-          });
+        if (firstCode) {
+          window.loadSnippet?.(firstCode);
+          document.querySelectorAll('.snippet-btns button')[0]?.classList.add('active');
         }
-        if (defaultDescription) showDescription(defaultDescription);
+        if (firstDescription) showDescription(firstDescription);
       });
     </script>
   </body>
