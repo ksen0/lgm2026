@@ -47,13 +47,49 @@ const host = document.getElementById('p5-host')!;
 const base = host.dataset.base ?? '';
 
 function p5Scripts(code: string): string {
-  if (code.includes('compute(')) {
-    return `<script src="${base}/rc-p5.js"><\/script><script src="${base}/rc-p5.webgpu.js"><\/script>`;
+  const hasCompute = code.includes('compute(');
+  const hasFont = code.includes('loadFont(');
+
+  const fontScript = hasFont
+    ? `<script src="${base}/p5.woff2.js"><\/script>`
+    : '';
+
+  if (hasCompute) {
+    return `<script src="${base}/rc-p5.js"><\/script><script src="${base}/rc-p5.webgpu.js"><\/script>${fontScript}`;
   }
-  return `<script>${p5Source}<\/script><script>${p5WebgpuSource}<\/script>`;
+  return `<script>${p5Source}<\/script><script>${p5WebgpuSource}<\/script>${fontScript}`;
+}
+
+function p5ImportsInfo(code: string): string {
+
+  let importsInfo = "";
+
+  if (code.includes('compute(')) {
+    importsInfo += " * https://raw.esm.sh/pr/p5@1ec7e78/lib/p5.min.js (experimental/pre-release)";
+    importsInfo += "\n * https://raw.esm.sh/pr/p5@1ec7e78/lib/p5.webgpu.js (experimental/pre-release)";
+  } else {
+    importsInfo += " * https://cdn.jsdelivr.net/npm/p5@2/lib/p5.min.js";
+    if (code.includes('WEBGPU')) {
+    importsInfo += "\n * https://cdn.jsdelivr.net/npm/p5@2/lib/p5.webgpu.js";
+    }
+  }
+
+  if (code.includes('loadFont(')) {
+    importsInfo += " * https://github.com/davepagurek/p5.woff2";
+  }
+  return `${importsInfo}`;
 }
 
 function runSketch(code: string, w = 400, h = 400) {
+
+  const requiresBlock = `\n\n/* Requires:\n${p5ImportsInfo(code)}\n */`;
+  const existingBlock = /\n\n\/\* Requires:[\s\S]*?\n \*\//;
+  const annotated = existingBlock.test(code)
+    ? code.replace(existingBlock, requiresBlock)
+    : code + requiresBlock;
+
+
+  view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: annotated } });
   (window as any).__consoleClear?.();
 
   const loadId = ++pendingLoadId;
@@ -118,8 +154,7 @@ function runSketch(code: string, w = 400, h = 400) {
   iframe.srcdoc = `<!DOCTYPE html><html><head>${headExtra}</head><body style="${bodyStyle}">
     ${bridge}
     ${p5Scripts(code)}
-    <script>${code}<\/script>
-    </body></html>`;
+    <script>${code}<\/script></body></html>`;
 
   host.querySelectorAll('iframe').forEach(f => f.remove());
   host.appendChild(iframe);
@@ -265,7 +300,6 @@ box-sizing: border-box;
     backdrop-filter: blur(8px);
     opacity: 0.4;
     pointer-events: none;
-    transition: opacity 0.2s ease;
   }
 
   .bg-mode .editor-panel.active {
