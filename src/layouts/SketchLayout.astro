@@ -51,7 +51,14 @@ const qrSrcdoc = `<!DOCTYPE html><html><body style="margin:0">
   <head>
     <meta charset="utf-8" />
     <title>p5.js @ lgm 2026</title>
-    <style>
+    <style is:global>
+
+    @font-face {
+  font-family: 'Space Grotesk';
+  src: url('Space_Grotesk/SpaceGrotesk-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 700;
+}
+
       html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
 
       #qr-frame {
@@ -70,17 +77,18 @@ const qrSrcdoc = `<!DOCTYPE html><html><body style="margin:0">
       #slide-desc {
         position: fixed;
         top:0px;
-        height: 50vh;
-        padding: 30px;
+        height: 40vh;
+        padding-left:30px;
+        padding-right:30px;
         left: 0;
         width: 50%;
         max-width: 800px;
         box-sizing: border-box;
         overflow: hidden;
         z-index: 15;
-        font-family: sans-serif;
+        font-family: Space Grotesk;
         font-size: 1.2em;
-        font-weight: 500;
+        font-weight: 300;
         color: #fff;
         /*-webkit-text-stroke: 3px black;
         paint-order: stroke fill;*/
@@ -92,6 +100,7 @@ const qrSrcdoc = `<!DOCTYPE html><html><body style="margin:0">
         flex-direction: column;
         justify-content: flex-end;
       }
+
       .snippet-btns {
         display: flex;
         flex: 1;
@@ -111,6 +120,11 @@ const qrSrcdoc = `<!DOCTYPE html><html><body style="margin:0">
       }
       .snippet-btns button:hover { color: #eee; }
       .snippet-btns button.active { color: #fff; }
+
+
+      a {
+        color: rgb(241, 103, 142) !important;
+      }
     </style>
   </head>
   <body>
@@ -132,6 +146,7 @@ const qrSrcdoc = `<!DOCTYPE html><html><body style="margin:0">
 
       function showDescription(text) {
         desc.innerHTML = text;
+        desc.offsetHeight;
       }
 
       function loadQr(url) {

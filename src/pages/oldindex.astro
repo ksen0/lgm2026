@@ -1,0 +1,49 @@
+---
+import SketchEditor from '../components/SketchEditor.astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>p5 v2 @ lgm 2026</title>
+    <style>
+      body { margin: 2rem; font-family: sans-serif; background: #111; color: #eee; }
+      h1 { margin-bottom: 0.25rem; }
+      p  { margin-bottom: 2rem; color: #aaa; }
+      a.enter {
+        display: inline-block;
+        margin-top: 2rem;
+        padding: 0.5rem 1.2rem;
+        border: 1px solid #eee;
+        color: #eee;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      a.enter:hover { background: #eee; color: #111; }
+      .contributors {
+        margin-top: 3rem;
+        opacity: 0.75;
+      }
+      .contributors img {
+        max-width: 100%;
+        border-radius: 6px;
+      }
+      .contributors p {
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>p5 v2 @ lgm 2026</h1>
+    <p>What is p5? Drawing with code, JavaScript, access and inclusion, all-contributors</p>
+    <p>history of 2.0;  2.0+ artist series; PF mission, p5.js focuson inlcusion and access; and strands specifically</p>
+    <SketchEditor />
+    <a class="enter" href="sketch">demo →</a>
+    <div class="contributors">
+      <p>p5.js contributors</p>
+      <img src=`${import.meta.env.BASE_URL}/fetched-assets/contributors.png` alt="p5.js contributors" />
+    </div>
+  </body>
+</html>

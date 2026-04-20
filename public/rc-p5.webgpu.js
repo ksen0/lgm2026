@@ -1436,6 +1436,7 @@
     STATEMENT: 'statement',
     ASSIGNMENT: 'assignment',
   };
+  const INSTANCE_ID_VARYING_NAME = '_p5_instanceID';
   const NodeTypeToName = Object.fromEntries(
     Object.entries(NodeType).map(([key, val]) => [val, key])
   );
@@ -1703,7 +1704,7 @@ ${uniforms$5}
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4<f32> {
   HOOK_beforeFragment();
-  var outColor = HOOK_getFinalColor(input.vColor);
+  var outColor = HOOK_getFinalColor(input.vColor, input.vVertTexCoord);
   outColor = vec4<f32>(outColor.rgb * outColor.a, outColor.a);
   HOOK_afterFragment();
   return outColor;
@@ -2074,7 +2075,7 @@ fn main(input: StrokeFragmentInput) -> @location(0) vec4<f32> {
       discard;
     }
   }
-  var col = HOOK_getFinalColor(inputs.color);
+  var col = HOOK_getFinalColor(inputs.color, vec2<f32>(0.0, 0.0));
   col = vec4<f32>(col.rgb, 1.0) * col.a;
   HOOK_afterFragment();
   return vec4<f32>(col);
@@ -2499,9 +2500,9 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     inputs.emissiveMaterial
   );
 
-  var outColor = HOOK_getFinalColor(
-    HOOK_combineColors(components)
-  );
+   var outColor = HOOK_getFinalColor(
+     HOOK_combineColors(components), input.vTexCoord
+   );
   outColor = vec4<f32>(outColor.rgb * outColor.a, outColor.a);
   HOOK_afterFragment();
   return outColor;
@@ -2853,6 +2854,113 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
 }
 `;
 
+  // Based on https://github.com/stegu/webgl-noise/blob/22434e04d7753f7e949e8d724ab3da2864c17a0f/src/noise3D.glsl
+  // MIT licensed, adapted for p5.strands and converted to WGSL
+
+  var noiseWGSL = `fn mod289Vec3(x: vec3<f32>) -> vec3<f32> {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+fn mod289Vec4(x: vec4<f32>) -> vec4<f32> {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+fn permute(x: vec4<f32>) -> vec4<f32> {
+  return mod289Vec4(((x*34.0)+10.0)*x);
+}
+
+fn taylorInvSqrt(r: vec4<f32>) -> vec4<f32> {
+  return vec4<f32>(1.79284291400159) - vec4<f32>(0.85373472095314) * r;
+}
+
+fn baseNoise(v: vec3<f32>) -> f32 {
+  let C = vec2<f32>(1.0/6.0, 1.0/3.0);
+  let D = vec4<f32>(0.0, 0.5, 1.0, 2.0);
+
+  // First corner
+  var i = floor(v + dot(v, C.yyy));
+  let x0 = v - i + dot(i, C.xxx);
+
+  // Other corners
+  let g = step(x0.yzx, x0.xyz);
+  let l = vec3<f32>(1.0) - g;
+  let i1 = min(g.xyz, l.zxy);
+  let i2 = max(g.xyz, l.zxy);
+
+  //   x0 = x0 - 0.0 + 0.0 * C.xxx;
+  //   x1 = x0 - i1  + 1.0 * C.xxx;
+  //   x2 = x0 - i2  + 2.0 * C.xxx;
+  //   x3 = x0 - 1.0 + 3.0 * C.xxx;
+  let x1 = x0 - i1 + C.xxx;
+  let x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
+  let x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
+
+  // Permutations
+  i = mod289Vec3(i);
+  let p = permute( permute( permute(
+          i.z + vec4<f32>(0.0, i1.z, i2.z, 1.0 ))
+        + i.y + vec4<f32>(0.0, i1.y, i2.y, 1.0 ))
+      + i.x + vec4<f32>(0.0, i1.x, i2.x, 1.0 ));
+
+  // Gradients: 7x7 points over a square, mapped onto an octahedron.
+  // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+  let n_ = 0.142857142857; // 1.0/7.0
+  let ns = n_ * D.wyz - D.xzx;
+
+  let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+
+  let x_ = floor(j * ns.z);
+  let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+
+  let x = x_ *ns.x + ns.yyyy;
+  let y = y_ *ns.x + ns.yyyy;
+  let h = vec4<f32>(1.0) - abs(x) - abs(y);
+
+  let b0 = vec4<f32>( x.xy, y.xy );
+  let b1 = vec4<f32>( x.zw, y.zw );
+
+  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
+  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
+  let s0 = floor(b0)*2.0 + vec4<f32>(1.0);
+  let s1 = floor(b1)*2.0 + vec4<f32>(1.0);
+  let sh = -step(h, vec4<f32>(0.0));
+
+  let a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  let a1 = b1.xzyw + s1.xzyw*sh.zzww;
+
+  let p0 = vec3<f32>(a0.xy, h.x);
+  let p1 = vec3<f32>(a0.zw, h.y);
+  let p2 = vec3<f32>(a1.xy, h.z);
+  let p3 = vec3<f32>(a1.zw, h.w);
+
+  //Normalise gradients
+  let norm = taylorInvSqrt(vec4<f32>(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  let p0_norm = p0 * norm.x;
+  let p1_norm = p1 * norm.y;
+  let p2_norm = p2 * norm.z;
+  let p3_norm = p3 * norm.w;
+
+  // Mix final noise value
+  var m = max(vec4<f32>(0.5) - vec4<f32>(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), vec4<f32>(0.0));
+  m = m * m;
+  return 105.0 * dot( m*m, vec4<f32>( dot(p0_norm,x0), dot(p1_norm,x1),
+        dot(p2_norm,x2), dot(p3_norm,x3) ) );
+}
+
+fn noise(st: vec3<f32>, octaves: i32, ampFalloff: f32) -> f32 {
+  var result = 0.0;
+  var amplitude = 1.0;
+  var frequency = 1.0;
+
+  for (var i = 0; i < 8; i++) {
+    if (i >= octaves) { break; }
+    result += amplitude * baseNoise(st * frequency);
+    frequency *= 2.0;
+    amplitude *= ampFalloff;
+  }
+  return (result + 1.0) * 0.5;
+}`;
+
   function internalError(errorMessage) {
       const prefixedMessage = `[p5.strands internal error]: ${errorMessage}`; 
       throw new Error(prefixedMessage);
@@ -3192,7 +3300,7 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
   function createStrandsNode(id, dimension, strandsContext, onRebind) {
     return new Proxy(
       new StrandsNode(id, dimension, strandsContext),
-      swizzleTrap(id, dimension, strandsContext)
+      swizzleTrap(id, dimension, strandsContext, onRebind)
     );
   }
 
@@ -3682,6 +3790,14 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
         );
 
         target.id = newID;
+
+        // If we swizzle assign on a struct component i.e.
+        //   inputs.position.rg = [1, 2]
+        // The onRebind callback will update the structs components so that it refers to the new values,
+        // and make a new ID for the struct with these new values
+        if (typeof onRebind === 'function') {
+          onRebind(newID);
+        }
         return true;
       }
       return Reflect.set(...arguments);
@@ -3755,7 +3871,28 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
           });
           const id = getOrCreateNode(dag, nodeData);
           recordInBasicBlock(cfg, cfg.currentBlock, id);
-          return createStrandsNode(id, field.dim, strandsContext);
+          // When a swizzle assignment fires (e.g. buf[i].vel.y *= -1), onRebind
+          // receives the new vector ID and writes it back to the buffer field,
+          // equivalent to buf[i].vel = newVec.
+          const onRebind = (newFieldID) => {
+            const accessData = createNodeData({
+              nodeType: NodeType.OPERATION,
+              opCode: OpCode.Binary.ARRAY_ACCESS,
+              dependsOn: [bufferNode.id, index.id],
+              dimension: field.dim,
+              baseType: BaseType.FLOAT,
+              identifier: field.name,
+            });
+            const accessID = getOrCreateNode(dag, accessData);
+            const assignData = createNodeData({
+              nodeType: NodeType.ASSIGNMENT,
+              dependsOn: [accessID, newFieldID],
+              phiBlocks: [],
+            });
+            const assignID = getOrCreateNode(dag, assignData);
+            recordInBasicBlock(cfg, cfg.currentBlock, assignID);
+          };
+          return createStrandsNode(id, field.dim, strandsContext, onRebind);
         },
         set(val) {
           // Create access node as assignment target (field name in identifier)
@@ -4109,6 +4246,10 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
       }
       return primitiveTypeName;
     },
+    getNoiseShaderSnippet() {
+      return noiseWGSL;
+    },
+
     generateHookUniformKey(name, typeInfo) {
       // For sampler2D types, we don't add them to the uniform struct,
       // but we still need them in the shader's hooks object so that
@@ -4147,9 +4288,13 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
         // Generate just a semicolon (unless suppressed)
         generationContext.write(semicolon);
       } else if (node.statementType === StatementType.EARLY_RETURN) {
-        const exprNodeID = node.dependsOn[0];
-        const expr = this.generateExpression(generationContext, dag, exprNodeID);
-        generationContext.write(`return ${expr}${semicolon}`);
+        if (node.dependsOn && node.dependsOn.length > 0) {
+          const exprNodeID = node.dependsOn[0];
+          const expr = this.generateExpression(generationContext, dag, exprNodeID);
+          generationContext.write(`return ${expr}${semicolon}`);
+        } else {
+          generationContext.write(`return${semicolon}`);
+        }
       }
     },
     generateAssignment(generationContext, dag, nodeID) {
@@ -4271,6 +4416,12 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
           } else if (generationContext.shaderContext === 'fragment') {
             sharedVar.usedInFragment = true;
           }
+        }
+
+        // Detect instanceID usage in fragment context and rewrite to varying name
+        if (node.identifier === this.instanceIdReference() && generationContext.shaderContext === 'fragment') {
+          generationContext.strandsContext._instanceIDUsedInFragment = true;
+          return INSTANCE_ID_VARYING_NAME;
         }
 
         // Check if this is a uniform variable (but not a texture or storage buffer)
@@ -4415,12 +4566,25 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
       const samplerVariable = variableNode(strandsContext, { baseType: BaseType.SAMPLER, dimension: 1 }, samplerIdentifier);
       const samplerNode = createStrandsNode(samplerVariable.id, samplerVariable.dimension, strandsContext);
 
-      // Create the augmented args: [texture, sampler, coords]
-      const augmentedArgs = [textureArg, samplerNode, coordsArg];
+      // Create a LOD literal node (0.0) so we can use textureSampleLevel instead
+      // of textureSample. textureSample doesn't let you use uniform values in control
+      // flow, whereas textureSampleLevel does. While we don't have mipmaps, we don't
+      // miss out.
+      // TODO: if we *do* add mipmap support, update this logic -- we'd need to hoist
+      // the texture lookup out of the control flow.
+      const lodLiteral = scalarLiteralNode(
+        strandsContext,
+        { dimension: 1, baseType: BaseType.FLOAT },
+        0.0
+      );
+      const lodNode = createStrandsNode(lodLiteral.id, lodLiteral.dimension, strandsContext);
 
-      const { id, dimension } = functionCallNode(strandsContext, 'textureSample', augmentedArgs, {
+      // Create the augmented args: [texture, sampler, coords, lod]
+      const augmentedArgs = [textureArg, samplerNode, coordsArg, lodNode];
+
+      const { id, dimension } = functionCallNode(strandsContext, 'textureSampleLevel', augmentedArgs, {
         overloads: [{
-          params: [DataType.sampler2D, DataType.sampler, DataType.float2],
+          params: [DataType.sampler2D, DataType.sampler, DataType.float2, DataType.float1],
           returnType: DataType.float4
         }]
       });
@@ -4430,114 +4594,11 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     instanceIdReference() {
       return 'instanceID';
     },
+
+    generateInstanceIDVarying() {
+      return { name: INSTANCE_ID_VARYING_NAME, declaration: `${INSTANCE_ID_VARYING_NAME}: i32`, source: 'i32(instanceID)', interpolation: 'flat' };
+    },
   };
-
-  // Based on https://github.com/stegu/webgl-noise/blob/22434e04d7753f7e949e8d724ab3da2864c17a0f/src/noise3D.glsl
-  // MIT licensed, adapted for p5.strands and converted to WGSL
-
-  var noiseWGSL = `fn mod289Vec3(x: vec3<f32>) -> vec3<f32> {
-  return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-fn mod289Vec4(x: vec4<f32>) -> vec4<f32> {
-  return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-fn permute(x: vec4<f32>) -> vec4<f32> {
-  return mod289Vec4(((x*34.0)+10.0)*x);
-}
-
-fn taylorInvSqrt(r: vec4<f32>) -> vec4<f32> {
-  return vec4<f32>(1.79284291400159) - vec4<f32>(0.85373472095314) * r;
-}
-
-fn baseNoise(v: vec3<f32>) -> f32 {
-  let C = vec2<f32>(1.0/6.0, 1.0/3.0);
-  let D = vec4<f32>(0.0, 0.5, 1.0, 2.0);
-
-  // First corner
-  var i = floor(v + dot(v, C.yyy));
-  let x0 = v - i + dot(i, C.xxx);
-
-  // Other corners
-  let g = step(x0.yzx, x0.xyz);
-  let l = vec3<f32>(1.0) - g;
-  let i1 = min(g.xyz, l.zxy);
-  let i2 = max(g.xyz, l.zxy);
-
-  //   x0 = x0 - 0.0 + 0.0 * C.xxx;
-  //   x1 = x0 - i1  + 1.0 * C.xxx;
-  //   x2 = x0 - i2  + 2.0 * C.xxx;
-  //   x3 = x0 - 1.0 + 3.0 * C.xxx;
-  let x1 = x0 - i1 + C.xxx;
-  let x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
-  let x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
-
-  // Permutations
-  i = mod289Vec3(i);
-  let p = permute( permute( permute(
-          i.z + vec4<f32>(0.0, i1.z, i2.z, 1.0 ))
-        + i.y + vec4<f32>(0.0, i1.y, i2.y, 1.0 ))
-      + i.x + vec4<f32>(0.0, i1.x, i2.x, 1.0 ));
-
-  // Gradients: 7x7 points over a square, mapped onto an octahedron.
-  // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
-  let n_ = 0.142857142857; // 1.0/7.0
-  let ns = n_ * D.wyz - D.xzx;
-
-  let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
-
-  let x_ = floor(j * ns.z);
-  let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
-
-  let x = x_ *ns.x + ns.yyyy;
-  let y = y_ *ns.x + ns.yyyy;
-  let h = vec4<f32>(1.0) - abs(x) - abs(y);
-
-  let b0 = vec4<f32>( x.xy, y.xy );
-  let b1 = vec4<f32>( x.zw, y.zw );
-
-  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
-  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
-  let s0 = floor(b0)*2.0 + vec4<f32>(1.0);
-  let s1 = floor(b1)*2.0 + vec4<f32>(1.0);
-  let sh = -step(h, vec4<f32>(0.0));
-
-  let a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-  let a1 = b1.xzyw + s1.xzyw*sh.zzww;
-
-  let p0 = vec3<f32>(a0.xy, h.x);
-  let p1 = vec3<f32>(a0.zw, h.y);
-  let p2 = vec3<f32>(a1.xy, h.z);
-  let p3 = vec3<f32>(a1.zw, h.w);
-
-  //Normalise gradients
-  let norm = taylorInvSqrt(vec4<f32>(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-  let p0_norm = p0 * norm.x;
-  let p1_norm = p1 * norm.y;
-  let p2_norm = p2 * norm.z;
-  let p3_norm = p3 * norm.w;
-
-  // Mix final noise value
-  var m = max(vec4<f32>(0.5) - vec4<f32>(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), vec4<f32>(0.0));
-  m = m * m;
-  return 105.0 * dot( m*m, vec4<f32>( dot(p0_norm,x0), dot(p1_norm,x1),
-        dot(p2_norm,x2), dot(p3_norm,x3) ) );
-}
-
-fn noise(st: vec3<f32>, octaves: i32, ampFalloff: f32) -> f32 {
-  var result = 0.0;
-  var amplitude = 1.0;
-  var frequency = 1.0;
-
-  for (var i = 0; i < 8; i++) {
-    if (i >= octaves) { break; }
-    result += amplitude * baseNoise(st * frequency);
-    frequency *= 2.0;
-    amplitude *= ampFalloff;
-  }
-  return (result + 1.0) * 0.5;
-}`;
 
   const filterUniforms = `
 // Group 0: Filter Properties
@@ -4852,6 +4913,7 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
   const baseComputeShader = `
 struct ComputeUniforms {
   uTotalCount: vec3<i32>,
+  uPhysicalCount: vec3<i32>,
 }
 @group(0) @binding(0) var<uniform> uniforms: ComputeUniforms;
 
@@ -4862,15 +4924,18 @@ fn main(
   @builtin(workgroup_id) workgroupId: vec3<u32>,
   @builtin(local_invocation_index) localIndex: u32
 ) {
-  var index = vec3<i32>(globalId);
+  let totalIterations = u32(uniforms.uTotalCount.x) * u32(uniforms.uTotalCount.y) * u32(uniforms.uTotalCount.z);
+  let physicalId = globalId.x + globalId.y * (u32(uniforms.uPhysicalCount.x)) + globalId.z * (u32(uniforms.uPhysicalCount.x) * u32(uniforms.uPhysicalCount.y));
 
-  if (
-    index.x >= uniforms.uTotalCount.x ||
-    index.y >= uniforms.uTotalCount.y ||
-    index.z >= uniforms.uTotalCount.z
-  ) {
+  if (physicalId >= totalIterations) {
     return;
   }
+
+  var index = vec3<i32>(0);
+  index.x = i32(physicalId % u32(uniforms.uTotalCount.x));
+  let remainingY = physicalId / u32(uniforms.uTotalCount.x);
+  index.y = i32(remainingY % u32(uniforms.uTotalCount.y));
+  index.z = i32(remainingY / u32(uniforms.uTotalCount.y));
 
   HOOK_iteration(index);
 }
@@ -5184,7 +5249,7 @@ fn main(
           }
           if (this._pInst._webgpuAttributes[key] !== value) {
             //changing value of previously altered attribute
-            this._webgpuAttributes[key] = value;
+            this._pInst._webgpuAttributes[key] = value;
             unchanged = false;
           }
           //setting all attributes with some change
@@ -5318,9 +5383,21 @@ fn main(
         const _b = args[2] || 0;
         const _a = args[3] || 0;
 
-        // If PENDING and no custom framebuffer, clear means stay UNPROMOTED
-        if (this._frameState === FRAME_STATE.PENDING && !this.activeFramebuffer()) {
-          this._frameState = FRAME_STATE.UNPROMOTED;
+        // If PENDING and no custom framebuffer, clear means stay UNPROMOTED.
+        // However, if we are still in setup (frameCount == 0), we must promote
+        // so that mainFramebuffer gets the cleared content. This ensures that if
+        // draw() later promotes without a copy, it starts from the correct state
+        // rather than a stale mainFramebuffer.
+        // Note: a mid-draw-loop transition from UNPROMOTED back to PROMOTED
+        // (i.e. calling background() some frames but not others) will still
+        // lose intermediate UNPROMOTED frame content.
+        if (this._frameState !== FRAME_STATE.PROMOTED && !this.activeFramebuffer()) {
+          if (this._pInst.frameCount > 0) {
+            this._frameState = FRAME_STATE.UNPROMOTED;
+          } else {
+            this._promoteToFramebufferWithoutCopy();
+            // clear() then targets mainFramebuffer via activeFramebuffer()
+          }
         }
 
         this._finishActiveRenderPass();
@@ -5535,9 +5612,9 @@ fn main(
           1;  // No MSAA needed when blitting already-antialiased textures to canvas
         const sampleCount = this._getValidSampleCount(requestedSampleCount);
 
-        const depthFormat = activeFramebuffer && activeFramebuffer.useDepth ?
-          this._getWebGPUDepthFormat(activeFramebuffer) :
-          this.depthFormat;
+        const depthFormat = activeFramebuffer
+          ? (activeFramebuffer.useDepth ? this._getWebGPUDepthFormat(activeFramebuffer) : undefined)
+          : this.depthFormat;
 
         const drawTarget = this.drawTarget();
         const clipping = this._clipping;
@@ -5614,25 +5691,27 @@ fn main(
               },
               primitive: { topology },
               multisample: { count: sampleCount },
-              depthStencil: {
-                format: depthFormat,
-                depthWriteEnabled: !clipping,
-                depthCompare: 'less-equal',
-                stencilFront: {
-                  compare: clipping ? 'always' : (clipApplied ? 'not-equal' : 'always'),
-                  failOp: 'keep',
-                  depthFailOp: 'keep',
-                  passOp: clipping ? 'replace' : 'keep',
+              ...(depthFormat ? {
+                depthStencil: {
+                  format: depthFormat,
+                  depthWriteEnabled: !clipping,
+                  depthCompare: 'less-equal',
+                  stencilFront: {
+                    compare: clipping ? 'always' : (clipApplied ? 'not-equal' : 'always'),
+                    failOp: 'keep',
+                    depthFailOp: 'keep',
+                    passOp: clipping ? 'replace' : 'keep',
+                  },
+                  stencilBack: {
+                    compare: clipping ? 'always' : (clipApplied ? 'not-equal' : 'always'),
+                    failOp: 'keep',
+                    depthFailOp: 'keep',
+                    passOp: clipping ? 'replace' : 'keep',
+                  },
+                  stencilReadMask: 0xFF,
+                  stencilWriteMask: clipping ? 0xFF : 0x00,
                 },
-                stencilBack: {
-                  compare: clipping ? 'always' : (clipApplied ? 'not-equal' : 'always'),
-                  failOp: 'keep',
-                  depthFailOp: 'keep',
-                  passOp: clipping ? 'replace' : 'keep',
-                },
-                stencilReadMask: 0xFF,
-                stencilWriteMask: clipping ? 0xFF : 0x00,
-              },
+              } : {}),
             });
             shader._pipelineCache.set(key, pipeline);
           }
@@ -6007,8 +6086,11 @@ fn main(
 
       _resetBuffersBeforeDraw() {
         this._finishActiveRenderPass();
+
         // Set state to PENDING - we'll decide on first draw
-        this._frameState = FRAME_STATE.PENDING;
+        if (this._pInst.frameCount > 0) {
+          this._frameState = FRAME_STATE.PENDING;
+        }
 
         // Clear depth buffer but DON'T start any render pass yet
         const activeFramebuffer = this.activeFramebuffer();
@@ -6119,6 +6201,8 @@ fn main(
         // once we're drawing to the framebuffer, because normally
         // those are reset.
         const savedModelMatrix = this.states.uModelMatrix.copy();
+        this.states.uModelMatrix.set(this.states.uModelMatrix.copy());
+        this.states.uModelMatrix.reset();
         this.mainFramebuffer.defaultCamera.set(this.states.curCamera);
 
         this.mainFramebuffer.begin();
@@ -6127,6 +6211,11 @@ fn main(
       }
 
       _promoteToFramebufferWithoutCopy() {
+        // Already promoted this frame
+        if (this._frameState === FRAME_STATE.PROMOTED) {
+          return;
+        }
+
         // Ensure mainFramebuffer matches canvas size
         if (this.mainFramebuffer.width !== this.width ||
             this.mainFramebuffer.height !== this.height) {
@@ -6141,6 +6230,8 @@ fn main(
 
         // Preserve transformation state
         const savedModelMatrix = this.states.uModelMatrix.copy();
+        this.states.uModelMatrix.set(this.states.uModelMatrix.copy());
+        this.states.uModelMatrix.reset();
         this.mainFramebuffer.defaultCamera.set(this.states.curCamera);
 
         // Begin rendering to mainFramebuffer
@@ -6454,7 +6545,6 @@ fn main(
           }
           this.flushDraw();
 
-          // this._pInst.background('red');
           this._pInst.push();
           this.states.setValue('enableLighting', false);
           this.states.setValue('activeImageLight', null);
@@ -6733,6 +6823,9 @@ fn main(
       // value: number or number[] - the data to write
       _packField(field, value, floatView, dataView, baseOffset) {
         if (value === undefined) return;
+
+        // Duck typing instead of instanceof to avoid importing a separate
+        // copy of the Color/Vector classes
         if (value?.isVector) {
           value = value.values.length !== value.dimensions ? value.values.slice(0, value.dimensions) : value.values;
         } else if (value?.isColor) {
@@ -7183,7 +7276,7 @@ fn main(
                 rgb += components.emissive;
                 return vec4<f32>(rgb, components.opacity);
               }`,
-                "vec4f getFinalColor": "(color: vec4<f32>) { return color; }",
+                "vec4f getFinalColor": "(color: vec4<f32>, texCoord: vec2<f32>) { return color; }",
                 "void afterFragment": "() {}",
               },
             }
@@ -7208,7 +7301,7 @@ fn main(
               },
               fragment: {
                 "void beforeFragment": "() {}",
-                "vec4<f32> getFinalColor": "(color: vec4<f32>) { return color; }",
+                "vec4<f32> getFinalColor": "(color: vec4<f32>, texCoord: vec2<f32>) { return color; }",
                 "void afterFragment": "() {}",
               },
             }
@@ -7234,7 +7327,7 @@ fn main(
               fragment: {
                 "void beforeFragment": "() {}",
                 "Inputs getPixelInputs": "(inputs: Inputs) { return inputs; }",
-                "vec4<f32> getFinalColor": "(color: vec4<f32>) { return color; }",
+                "vec4<f32> getFinalColor": "(color: vec4<f32>, texCoord: vec2<f32>) { return color; }",
                 "bool shouldDiscard": "(outside: bool) { return outside; };",
                 "void afterFragment": "() {}",
               },
@@ -7512,6 +7605,50 @@ ${hookUniformFields}}
           }
         }
 
+        // Handle instanceID varying for fragment access
+        if (shader.hooks.instanceIDVarying) {
+          const { name, declaration, source, interpolation } = shader.hooks.instanceIDVarying;
+          const nextLocIndex = this._getNextAvailableLocation(preMain, shaderType);
+          const interpAttr = interpolation ? ` @interpolate(${interpolation})` : '';
+          const [varName, varType] = declaration.split(':').map(s => s.trim());
+          const structMember = `@location(${nextLocIndex})${interpAttr} ${declaration},`;
+
+          if (shaderType === 'vertex') {
+            // Inject into VertexOutput struct
+            preMain = preMain.replace(
+              /struct\s+VertexOutput\s+\{([^}]*)\}/,
+              (match, body) => `struct VertexOutput {${body}\n${structMember}}`
+            );
+            // Add private global
+            preMain += `var<private> ${declaration};\n`;
+            // Assign from built-in instanceID at start of main()
+            postMain = `\n  ${varName} = ${source};\n` + postMain;
+            // Copy to output struct before return
+            const returnMatch = postMain.match(/return\s+(\w+)\s*;/);
+            if (returnMatch) {
+              const outputVarName = returnMatch[1];
+              postMain = postMain.replace(
+                /(return\s+\w+\s*;)/g,
+                `${outputVarName}.${varName} = ${varName};\n  $1`
+              );
+            }
+          } else if (shaderType === 'fragment') {
+            // Inject into FragmentInput struct
+            preMain = preMain.replace(
+              /struct\s+FragmentInput\s+\{([^}]*)\}/,
+              (match, body) => `struct FragmentInput {${body}\n${structMember}}`
+            );
+            // Add private global
+            preMain += `var<private> ${declaration};\n`;
+            // Initialize from input struct at start of main()
+            const inputMatch = main.match(/fn main\s*\((\w+):\s*\w+\)/);
+            if (inputMatch) {
+              const inputVarName = inputMatch[1];
+              postMain = `\n  ${varName} = ${inputVarName}.${varName};\n` + postMain;
+            }
+          }
+        }
+
         let hooks = '';
         let defines = '';
         if (shader.hooks.declarations) {
@@ -7781,7 +7918,7 @@ ${hookUniformFields}}
       }
 
       defaultFramebufferAntialias() {
-        return true;
+        return this._pInst._webgpuAttributes?.antialias !== false;
       }
 
       supportsFramebufferAntialias() {
@@ -7977,6 +8114,8 @@ ${hookUniformFields}}
       // Maps a plain JS value to the WGSL type string that represents it in a struct.
       _jsValueToWgslType(value) {
         if (typeof value === 'number') return 'f32';
+        // Duck typing instead of instanceof to avoid importing a separate
+        // copy of the Color/Vector classes
         if (value?.isVector) {
           if (value.dimensions === 2) return 'vec2f';
           if (value.dimensions === 3) return 'vec3f';
@@ -8012,6 +8151,8 @@ ${hookUniformFields}}
               value !== null &&
               typeof value === 'object' &&
               !Array.isArray(value) &&
+              // Duck typing instead of instanceof to avoid importing a separate
+              // copy of the Color/Vector classes
               !value?.isVector &&
               !value?.isColor
             ) {
@@ -8463,9 +8604,6 @@ ${hookUniformFields}}
         return super.filter(...args);
       }
 
-      getNoiseShaderSnippet() {
-        return noiseWGSL;
-      }
 
 
       baseFilterShader() {
@@ -8626,10 +8764,33 @@ ${hookUniformFields}}
         const WORKGROUP_SIZE_Y = 8;
         const WORKGROUP_SIZE_Z = 1;
 
-        // Calculate number of workgroups needed
-        const workgroupCountX = Math.ceil(x / WORKGROUP_SIZE_X);
-        const workgroupCountY = Math.ceil(y / WORKGROUP_SIZE_Y);
-        const workgroupCountZ = Math.ceil(z / WORKGROUP_SIZE_Z);
+        // auto spreading: if any dimension is too large or for performance optimization,
+        // spread total iteration count across dimensions
+        const totalIterations = x * y * z;
+        const MAX_THREADS_PER_DIM = 65535 * 8;
+
+        let px = x;
+        let py = y;
+        let pz = z;
+
+        // we spread if we exceed GPU limits OR if it involves a large 1D dispatch
+        const exceedsLimits = x > MAX_THREADS_PER_DIM || y > MAX_THREADS_PER_DIM || z > MAX_THREADS_PER_DIM;
+        const isLarge1D = totalIterations > 1024 && y === 1 && z === 1;
+
+        if (exceedsLimits || isLarge1D) {
+          // Always use 2D square spreading (√N × √N).
+          // Benchmarks showed 2D square equals or outperforms 3D cube at every
+          // scale tested, with simpler index reconstruction in the shader.
+          px = Math.ceil(Math.sqrt(totalIterations));
+          py = Math.ceil(totalIterations / px);
+          pz = 1;
+        }
+
+        shader.setUniform('uPhysicalCount', [px, py, pz]);
+
+        const workgroupCountX = Math.ceil(px / WORKGROUP_SIZE_X);
+        const workgroupCountY = Math.ceil(py / WORKGROUP_SIZE_Y);
+        const workgroupCountZ = Math.ceil(pz / WORKGROUP_SIZE_Z);
 
         const commandEncoder = this.device.createCommandEncoder();
         const passEncoder = commandEncoder.beginComputePass();
