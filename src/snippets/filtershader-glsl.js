@@ -32,7 +32,7 @@ function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   pixelDensity(1);
   video = createVideo(
-    '../../public/DiagonalCrosswalkYongeDundas.webm'
+    '../DiagonalCrosswalkYongeDundas.webm'
   );
   video.volume(0);
   video.hide();

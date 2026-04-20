@@ -2,7 +2,7 @@
 import SketchEditor from '../components/SketchEditor.astro';
 
 const { frontmatter } = Astro.props;
-const slides = frontmatter.slides ?? [];
+const { slides = [], defaultSnippet = '', defaultDescription = '' } = frontmatter;
 
 const snippetModules = import.meta.glob('../snippets/*.js', { eager: true, query: '?raw', import: 'default' });
 
@@ -11,6 +11,8 @@ const resolved = slides.map(({ snippet, description }: { snippet: string, descri
   description,
   code: snippetModules[`../snippets/${snippet}.js`] as string ?? '',
 }));
+
+const defaultCode = snippetModules[`../snippets/${defaultSnippet}.js`] as string ?? '';
 ---
 
 <html lang="en">
@@ -75,22 +77,34 @@ const resolved = slides.map(({ snippet, description }: { snippet: string, descri
       </div>
     </SketchEditor>
 
-    <script>
-      const desc = document.getElementById('slide-desc')!;
+    <script define:vars={{ defaultCode, defaultDescription, defaultSnippet }}>
+      const desc = document.getElementById('slide-desc');
 
-      function showDescription(text: string) {
+      function showDescription(text) {
         desc.textContent = text;
       }
 
       document.querySelectorAll('.snippet-btns button').forEach(btn => {
         btn.addEventListener('click', () => {
-          const code = (btn as HTMLElement).dataset.code!;
-          const description = (btn as HTMLElement).dataset.description ?? '';
+          const code = btn.dataset.code;
+          const description = btn.dataset.description ?? '';
           document.querySelectorAll('.snippet-btns button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          (window as any).loadSnippet?.(code);
+          window.loadSnippet?.(code);
           if (description) showDescription(description);
         });
+      });
+
+      // load default on start
+      window.addEventListener('load', () => {
+        if (defaultCode) {
+          window.loadSnippet?.(defaultCode);
+          // mark matching button active if it's also in the slides list
+          document.querySelectorAll('.snippet-btns button').forEach(btn => {
+            if (btn.textContent?.trim() === defaultSnippet) btn.classList.add('active');
+          });
+        }
+        if (defaultDescription) showDescription(defaultDescription);
       });
     </script>
   </body>
