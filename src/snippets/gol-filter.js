@@ -3,11 +3,13 @@
 let cells;
 let next;
 let update;
-let W = 100;
-let H = 100;
+let W = 0;
+let H = 0;
 
 async function setup() {
-  createCanvas(100, 100, WEBGL);
+  W = windowWidth;
+  H = windowHeight;
+  createCanvas(windowWidth, windowHeight, WEBGL);
 
   cells = createFramebuffer({
     width: W,

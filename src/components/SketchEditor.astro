@@ -29,11 +29,9 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import p5Source from '/node_modules/p5/lib/p5.min.js?raw';
 
 const DEFAULT_CODE = `function setup() {
-  createCanvas(400, 400);
-  describe('circle follows mouse');
+  createCanvas(windowWidth, windowHeight);
 }
 function draw() {
-  background(20);
   circle(mouseX, mouseY, 100);
 }`;
 
@@ -63,6 +61,16 @@ function runSketch(code: string, w = 400, h = 400) {
   const iframe = document.createElement('iframe');
   iframe.dataset.loadId = String(loadId);
   iframe.style.cssText = `border: none; width: ${w}px; height: ${h}px; display: block;`;
+
+  // In bg-mode the iframe is full-viewport so windowWidth/windowHeight work
+  // correctly inside p5. The body is a flex container that right-centers the
+  // canvas — a 400×400 sketch sits middle-right, a windowWidth×windowHeight
+  // sketch fills the screen. flex-shrink:0 prevents flex from squishing the
+  // canvas when it is smaller than the container.
+  const bodyStyle = isBg
+    ? 'margin:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:flex-end'
+    : 'margin:0';
+  const headExtra = isBg ? '<style>canvas{flex-shrink:0}</style>' : '';
 
   const bridge = `<script>
   const _p = window.parent;
@@ -106,7 +114,7 @@ function runSketch(code: string, w = 400, h = 400) {
   }, 100);
 <\/script>`;
 
-  iframe.srcdoc = `<!DOCTYPE html><html><body style="margin:0">
+  iframe.srcdoc = `<!DOCTYPE html><html><head>${headExtra}</head><body style="${bodyStyle}">
     ${bridge}
     ${p5Scripts(code)}
     <script>${code}<\/script>
@@ -208,6 +216,8 @@ window.addEventListener('message', (e) => {
   #run-btn:hover { background: #444; }
 
   #sketch-stats {
+  background:rgb(0,0,0);
+  padding:5px;
     position: fixed;
     top: 0.75rem;
     right: 1rem;
@@ -221,11 +231,20 @@ window.addEventListener('message', (e) => {
   /* ── bg mode ── */
   .bg-mode { display: block; }
 
+  /* full-viewport iframe host; pointer-events:none so page content is still
+     interactive — the iframe itself handles its own mouse events */
   .bg-mode #p5-host {
     position: fixed;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+  }
+
+  .bg-mode #p5-host iframe {
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
   }
 
   .bg-mode .editor-panel {
