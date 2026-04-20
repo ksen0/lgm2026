@@ -6,22 +6,14 @@ let video;
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   pixelDensity(1);
-  video = createVideo(
-    '../DiagonalCrosswalkYongeDundas.webm'
-  );
-  video.volume(0);
+  video = createCapture(VIDEO);
   video.hide();
   video.loop();
-  describe(
-    'A video of a city crosswalk, with colors getting more offset the further from the center they are'
-  );
 }
 
 function draw() {
   background(255);
-  push();
   imageMode(CENTER);
   image(video, 0, 0, width, height, 0, 0, video.width, video.height, COVER);
-  pop();
   filter(BLUR, 100);
 }

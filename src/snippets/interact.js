@@ -1,6 +1,4 @@
-//noprotect
-// BAsed on Dave's sketch: https://editor.p5js.org/ksen0/sketches/xIKaLhfuu
-
+// Autohored by Dave Pagurek, remixed by Kit Kuksenok
 
 let simShader;
 
@@ -66,9 +64,7 @@ function draw() {
   fill(0);
   filter(simShader);
   
-  if (mouseIsPressed) {
-    stroke(255);
-    noFill();
-    circle(mouseX - width/2, mouseY - height/2, 200);
-  }
+  stroke(255);
+  noFill();
+  circle(mouseX - width/2, mouseY - height/2, 200);
 }

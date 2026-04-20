@@ -1,4 +1,4 @@
-// noprotect
+// Author: Dave Pagurek
 
 let cells;
 let next;

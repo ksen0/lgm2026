@@ -1,6 +1,4 @@
-// Note: this is using an experimental, unreleased build
-// https://raw.esm.sh/pr/p5@5a95725/lib/p5.js
-// https://raw.esm.sh/pr/p5@5a95725/lib/p5.webgpu.js
+// Authored by Dave Pagurek to demonstrate an unreleased feature
 
 let cells;
 let nextCells;
