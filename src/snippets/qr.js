@@ -1,0 +1,1 @@
+qr - just show a nice qr code of Discourse thread

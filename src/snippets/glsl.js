@@ -32,6 +32,7 @@ void main() {
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
   pixelDensity(1);
+  
   video = createCapture(VIDEO);
   video.hide();
   video.loop();

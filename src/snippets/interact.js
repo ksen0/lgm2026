@@ -4,6 +4,8 @@ let simShader;
 
 function setup() {
   createCanvas(windowWidth/2, windowHeight, WEBGL);
+  pixelDensity(1);
+  
   loadPixels();
   
   for (let i=0; i< pixels.length; i += 4){

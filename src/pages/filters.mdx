@@ -6,12 +6,19 @@ slides:
 
 
   - snippet: blur
-    description: <h1>Built-in Shaders</h1><p>There are preset filters available in p5.js with <code><a href=https://p5js.org/reference/p5/filter/>filter</a>()</code>, which are shaders. The next two examples show a user-defined shader written in GLSL and in p5.strands, and applied using <code>filter()</code>.</p><p>One of the design principles in p5.js is to provide built-ins and defaults.</p>
+    description: <h1>Built-in Shaders</h1><p>There are preset filters available in p5.js with <code><a href=https://p5js.org/reference/p5/filter/>filter</a>()</code>. The next two examples show a user-defined shader written in GLSL and in p5.strands, and applied using <code>filter()</code>.</p><p>One of the design principles in p5.js is to provide built-ins and defaults.</p>
 
   - snippet: glsl
     description: <h1>Writing Shaders with GLSL</h1><p>p5.js v1 and p5.js v2 support GLSL (OpenGL Shading Language). A shader has to be defined first (<code>createFilterShader(...)</code>) and then used (<code>filter(...)</code>)</p>
 
   - snippet: strands
-    description: <h1>Writing Shaders with p5.strands</h1><p>In p5.js v2, shaders can be written using JavaScript which is then transpiled to GLSL.</p><p>A p5.strands shader has to be defined first (e.g., <code>buildFilterShader(...)</code>) and then used (e.g., <code>filter(...)</code>). In the definition, different hooks can be used to access and update data. For example, getting the current color at a pizel and changing it.</p>
+    description: <h1>Writing Shaders with p5.strands</h1><p>In p5.js v2, shaders can be written using JavaScript which is then transpiled to GLSL.</p><p>A p5.strands shader has to be defined first (e.g., <code>buildFilterShader(...)</code>) and then used (e.g., <code>filter(...)</code>). In the definition, different hooks can be used to access and update data. For example, getting the current color at a pixel and changing it.</p>
+
+  - snippet: prerequisites
+    description: TODO HOW THIS WAS MADE     The API has been carefully updated so that you don't need more than that to start. You do not need to know about the shader pipeline, uniforms, varying variables, or anything like that at first. You will still learn those things! But they are not required upfront like they would otherwise be; they stay out of the way until you need them. https://www.davepagurek.com/blog/p5-compute-shaders/
+
+
+  - snippet: today
+    description: <p>Beginner-friendliness - learners and teachers</p><p><strong>Writing p5.js shaders - GLSL and p5.strands</a></strong></p><p><a href="/lgm2026/game-of-life/">Whats next? WebGPU and compute shaders</a></p>
 
 ---

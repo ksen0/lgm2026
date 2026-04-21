@@ -10,6 +10,7 @@ async function setup() {
   W = windowWidth;
   H = windowHeight;
   createCanvas(windowWidth, windowHeight, WEBGL);
+  pixelDensity(1);
 
   cells = createFramebuffer({
     width: W,

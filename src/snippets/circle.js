@@ -1,10 +1,10 @@
 function setup() {
   createCanvas(windowWidth, windowHeight);
   background("pink");
-  stroke("white");
+  stroke("black");
   noFill();
 
-  describe("A purple circle on a pink background that trails the mouse as it moves.");
+  describe("A black circle on a pink background that trails the mouse as it moves.");
 }
 
 function draw() {

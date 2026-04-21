@@ -11,6 +11,7 @@ async function setup() {
   W = windowWidth;
   H = windowHeight;
   await createCanvas(windowWidth, windowHeight, WEBGPU);
+  pixelDensity(1);
 
   let initial = new Float32Array(W * H);
   for (let i = 0; i < initial.length; i++) {

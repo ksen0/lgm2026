@@ -1,9 +1,10 @@
-let all_contributors;
+let img;
 
 async function setup() {
   createCanvas(windowWidth, windowHeight);
+  pixelDensity(1);
   describe("A grid of GitHub profile pictures of the contributors to p5.js")
-  all_contributors = await loadImage('fetched-assets/contributors.png');
+  img = await loadImage('fetched-assets/contributors.png');
 }
 
 function draw() {
@@ -11,15 +12,16 @@ function draw() {
   let xSpeed = 0.5;
   let ySpeed = -0.3;
 
-  let xOffset = (-frameCount * xSpeed) % all_contributors.width;
-  let yOffset = (-frameCount * ySpeed) % all_contributors.height;
+  let xOffset = (-frameCount * xSpeed) % img.width;
+  let yOffset = (-frameCount * ySpeed) % img.height;
 
-  for (let x = xOffset - all_contributors.width; x < width; x += all_contributors.width) {
-    for (let y = yOffset - all_contributors.height; y < height; y += all_contributors.height) {
-      image(all_contributors, x, y);
+  for (let x = xOffset - img.width; x < width; x += img.width) {
+    for (let y = yOffset - img.height; y < height; y += img.height) {
+      image(img, x, y);
     }
   }
 
-  filter(POSTERIZE, map(mouseX, 0, windowWidth, 10, 2));
+  let cutoff = windowWidth/5*4;
+  filter(BLUR, map(max(cutoff, mouseX), cutoff, windowWidth, 10, 0));
 
 }
