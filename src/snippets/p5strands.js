@@ -14,9 +14,9 @@ let hoverText = "filter()";
 
 function setup() {
   createCanvas(windowWidth/2, windowHeight);
-  let style = document.createElement('style');
-  style.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; }';
-  document.head.appendChild(style);
+  let addStyle = document.createElement('style');
+  addStyle.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; }';
+  document.head.appendChild(addStyle);
   
   let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/3*2-20, true, true, false);
   for (let fn in build) {
