@@ -18,7 +18,7 @@ function setup() {
   style.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; }';
   document.head.appendChild(style);
   
-  let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/3*2-50, true, true, false);
+  let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/3*2-20, true, true, false);
   for (let fn in build) {
     prevBox = styledText(fn, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
   }
