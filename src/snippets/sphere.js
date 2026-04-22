@@ -13,9 +13,9 @@ function setup() {
 function noiseTexture() { 
   // Use p5.strands hooks to describe modifications to a default shader
   pixelInputs.begin();
-  pixelInputs.color.r *= noise(pixelInputs.texCoord * 5 + millis()/7000);
-  pixelInputs.color.g *= noise(pixelInputs.texCoord * 3 + millis()/20000);
-  pixelInputs.color.b *= noise(pixelInputs.texCoord * 2 + millis()/4000);
+  pixelInputs.color.r *= noise(pixelInputs.texCoord * 5 + millis()*0.00008);
+  pixelInputs.color.g *= noise(pixelInputs.texCoord * 3 + millis()*0.00005);
+  pixelInputs.color.b *= noise(pixelInputs.texCoord * 2 + millis()*0.00025);
   pixelInputs.end();
 }
 
@@ -31,6 +31,10 @@ function draw() {
   } else {
     translate(width/3, -height/4);
   }
+
+  //directionalLight(200, 200, 255, 1, -1, -1);
+  //directionalLight(255, 200, 200, -1, 0.5, -1);
+
   rotateX(-PI)
   sphere(200);
 }

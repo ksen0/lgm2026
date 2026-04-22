@@ -4,7 +4,7 @@ function setup() {
   stroke("black");
   noFill();
 
-  describe("A black circle on a pink background that trails the mouse as it moves.");
+  describe("A black circle that trails the mouse as it moves on a pink background.");
 }
 
 function draw() {

@@ -21,7 +21,8 @@ function draw() {
     }
   }
 
-  let cutoff = windowWidth/5*4;
-  filter(BLUR, map(max(cutoff, mouseX), cutoff, windowWidth, 10, 0));
+  // Interactive blur:
+  // let cutoff = windowWidth/5*4;
+  // filter(BLUR, map(max(cutoff, mouseX), cutoff, windowWidth, 10, 0));
 
 }

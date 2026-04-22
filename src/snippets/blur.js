@@ -1,6 +1,3 @@
-// Based on:
-// Filter Shader (p5.strands): Created by Dave Pagurek. Remixed by Dorine Tipo. From 2026 onwards, edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
-
 let video;
 
 function setup() {
