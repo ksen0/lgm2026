@@ -3,7 +3,7 @@
 let simShader;
 
 function setup() {
-  createCanvas(windowWidth/2, windowHeight, WEBGL);
+  createCanvas(windowWidth, windowHeight, WEBGL);
   pixelDensity(1);
   
   loadPixels();
@@ -68,5 +68,5 @@ function draw() {
   
   stroke(255);
   noFill();
-  circle(mouseX - width/2, mouseY - height/2, 200);
+  circle(mouseX - width/2, mouseY - height/2, 400);
 }

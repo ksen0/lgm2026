@@ -4,7 +4,7 @@ async function setup() {
   createCanvas(windowWidth, windowHeight);
   pixelDensity(1);
   describe("A grid of GitHub profile pictures of the contributors to p5.js")
-  img = await loadImage('fetched-assets/contributors.png');
+  img = await loadImage('https://ksen0.github.io/lgm2026/fetched-assets/contributors.png');
 }
 
 function draw() {
