@@ -1,13 +1,13 @@
 let levels = [
     "Level 0: The built-in filters are shaders (e.g., filter(BLUR))",
-    "Level 1+ JS/p5.js prerequisites:<br>...Make and update variables. Call and define functions<br>...Familiarity with any of: mouseX, mouseY, frameCount, millis(), width, height, noise(), lerp(), map(), sin(), cos()",
+    "JS/p5.js prerequisites:<br>...Make and update variables. Call and define functions<br>...Familiarity with any of: mouseX, mouseY, frameCount, millis(), width, height, noise(), lerp(), map(), sin(), cos()",
     "Level 1: filter() and buildFilterShader() with hooks: filterColor & getTexture()",
-    "Level 2+ JS/p5.js prerequisites - 3D modeling 101:<br>...Using coordinates in a sketch to position build-in models with model()<br>...Optional: Custom models with loadModel(),  buildGeometry(), textToModel()",
+    "JS/p5.js prerequisites - 3D modeling 101:<br>...Using coordinates in a sketch to position build-in models with model()<br>...Optional: Custom models with loadModel(),  buildGeometry(), textToModel()",
     "Level 2: buildMaterialShader() and the hooks that can be used with shader()",
-    "Level 3+ JS/p5.js prerequisite: familiarity with each of: mouseX, mouseY, frameCount, millis(), width, height, noise(), lerp(), map(), sin(), cos()",
+    "JS/p5.js prerequisite: familiarity with each of: mouseX, mouseY, frameCount, millis(), width, height, noise(), lerp(), map(), sin(), cos()",
     "Level 3: Other builders, including for both shader() and strokeShader()",
     "Level 4: instanceID() and passing in data with setUniform(), uniformTexture()",
-    "Level 5+ Prerequisite: initial experience with data structures",
+    "Prerequisite: initial experience with data structures",
     "Level 5: Using compute shaders and WebGPU"
 ]
 let lines = [];

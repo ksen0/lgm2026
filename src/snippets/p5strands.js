@@ -85,7 +85,7 @@ function draw() {
     		currentHook = "  filterColor.begin();\n  let c = getTexture(\n    filterColor.canvasContent,\n    filterColor.texCoord\n  	);\n  filterColor.set(...);\n  filterColor.end();"
     	}
 	else if (currentHook === "getTexture() with uniformTexture"){
-	    	currentHook = "  filterColor.begin();\n  const textInput = uniformTexture(...);\n  filterColor.end();"
+	    	currentHook = "  ....begin();\n  const textInput = uniformTexture(...);\n  ....end();"
     }
     else if (currentHook === "filterColor"){
     	currentHook = "  filterColor.begin();\n  filterColor.set([1, 0, 0, 1]);\n  filterColor.end();"
