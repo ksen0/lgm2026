@@ -15,7 +15,7 @@ let hoverText = "filter()";
 function setup() {
   createCanvas(600, windowHeight).parent('sketch-container');
   let addStyle = document.createElement('style');
-  addStyle.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; } p { touch-action: manipulation; }';
+  addStyle.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; }';
   document.head.appendChild(addStyle);
   
   let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/4*3, true, true, false);
