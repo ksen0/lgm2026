@@ -18,7 +18,7 @@ function setup() {
   addStyle.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; }';
   document.head.appendChild(addStyle);
   
-  let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/4*3, true, true, false);
+  let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/3*2-20, true, true, false);
   for (let fn in build) {
     prevBox = styledText(fn, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
   }
@@ -29,7 +29,7 @@ function setup() {
     prevBox = styledText(item, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
   });
 
-  prevBox = styledText("<span class='highlight'>Define behavior with hooks</span>", width/2, height/4*3, true, true, false);
+  prevBox = styledText("<span class='highlight'>Define behavior with hooks</span>", width/2, height/3*2-20, true, true, false);
   
   hook.forEach((item, i) => {
     prevBox = styledText(item, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
