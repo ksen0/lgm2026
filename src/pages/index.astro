@@ -1,17 +1,42 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>p5 v2 @ lgm 2026</title>
-    <style>
-      body {
-  margin: 0;
+    <style is:inline>
+ body {
+  background: #000;
+  margin:0;
   padding: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 300;
+  font-size: 18px;
+  color: #fff;
 }
 
 h1 {
-  position: absolute;
   z-index: 10;
   margin: 10px;
+}
+
+canvas {
+  display: block;
+}
+
+#page-content {
+margin-top:300px;
+  padding: 20px;
+  width:100%;
+  max-width: 800px;
+  line-height: 1.6;
+}
+
+#page-content a {
+  color: #E91E63;
+}
+#sketch-container {
+  width: 100%;
+  height: 100vh;
 }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
@@ -19,209 +44,76 @@ h1 {
 
   </head>
   <body>
-    <h1>p5 v2 @ lgm 2026</h1>
-    <script client:load>
-let build = {
-  "buildFilterShader()": ["filter()", "filterColor", "getTexture()"],
-  "buildColorShader()": ["shader()", "getTexture() with uniformTexture", "objectsInputs", "worldInputs", "cameraInputs", "finalColor", "instanceID()"],
-  "buildNormalShader()": ["shader()", "getTexture() with uniformTexture", "objectsInputs", "worldInputs", "cameraInputs", "finalColor", "instanceID()"],
-  "buildStrokeShader()": ["strokeShader()", "getTexture() with uniformTexture", "objectsInputs", "worldInputs", "cameraInputs", "finalColor", "pixelInputs", "instanceID()"],
-  "buildMaterialShader()": ["shader()", "getTexture() with uniformTexture", "objectsInputs", "worldInputs", "cameraInputs", "finalColor", "combineColors", "pixelInputs", "instanceID()"],
-}
+    <div id="sketch-container"></div>
 
-let use = ["filter()", "shader()", "strokeShader()"];
+    <script client:load src="p5strands.js"></script>
+<div id="page-content">
 
-let hook = ["filterColor", "objectsInputs", "worldInputs", "cameraInputs", "finalColor", "pixelInputs", "combineColors", "instanceID()", "getTexture()", "getTexture() with uniformTexture"];
+<h1>Resources</h1>
 
-let hoverText = "filter()";
+<ol>
+<li><a href="https://hello.p5js.org/"">Hello p5.js!</a> interactive video that introduces the p5.js project</li>
+<li>p5.strands examples
+  <ul>
+  <li><a href=https://openprocessing.org/sketch/2923531/pc/JAvKDyD8>photo synth</a> by <a href=https://bit.ly/alwayscodingsomething>Noland Chaliha</a> demonstrates using p5.DOM and p5.strands to build a custom photo editing app in ~700 lines of p5.js code</li>
+  <li>Translations of GLSL sketches into p5.strands by <a href=https://dorinetipo.vercel.app/>Dorine Tipo</a>: filter shader <a href="https://p5js.org/examples/3d-filter-shader/">GLSL</a> & <a href="https://beta.p5js.org/examples/3d-filter-shader-p5strands/">p5.strands</a></li>
+  </ul>
+</li>
+<li><a href="https://beta.p5js.org/tutorials/intro-to-p5-strands/">Introduction to p5.strands</a> tutorial by Luke Plowden. To learn how p5.strands works, we’ll create a 3D sketch using 4 different shaders, each illustrating different concepts. The code will be built incrementally throughout the tutorial, with the complete code available at the end.</li>
+<li>Make a sketch (or two) and submit to <a href=https://openprocessing.org/curation/90883>the p5.strands curation on OpenProcessing</a>. Possile ideas:
+  <ul>
+  <li>Minimal example to help illustrate a particular function, variable, or concept in the p5.strands API</li>
+  <li>Translation of an open-source GLSL example into p5.strands</li>
+  <li>Debugging can be challenging in p5.strands sketches! Even if you don't need help with finding a solution, please document the problems you encounter to help us understand common problems. Ideas on debugging tools are helpful; there is ongoing work but unput and fresh perspective is very welcome.</li>
+  </ul>
+</li>
+<li>Ask questions nad monitor updates in <a href=#>this Discorse thread</a>, and/or <a href="http://discord.p5js.org">discord.p5js.org</a>#p5-strands</li>
+<li>Technical and ontributor docs related to p5.strands, WebGL, and WebGPU:
+  <ul>
+  <li>For any new code conributors, I recommend <a href="https://beta.p5js.org/contribute/contributor_guidelines/">Contributor Guidelines</a> and the documentation on <a href="https://beta.p5js.org/contribute/contributing_to_the_p5js_reference/">contributing to the p5.js reference</a></li>
+  <li><a href="https://beta.p5js.org/contribute/p5strands/">p5.strands Overview
+</a>: "At its core, p5.strands works in four steps:
 
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  let addStyle = document.createElement('style');
-  addStyle.innerHTML = '.highlight { color: #E91E63; } .brush {background: #192877; }';
-  document.head.appendChild(addStyle);
-  
-  let prevBox = styledText("<span class='highlight'>Build in setup()</span>", 0, height/3*2-20, true, true, false);
-  for (let fn in build) {
-    prevBox = styledText(fn, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
-  }
-  
-  prevBox = styledText("<span class='highlight'>Use in setup() or draw()</span>", 0, prevBox[1] + prevBox[3], true, true, false);
-  
-  use.forEach((item, i) => {
-    prevBox = styledText(item, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
-  });
+<ol><li>The user writes a function in pseudo-JavaScript.</li>
+<li>p5.strands transpiles that into actual JavaScript and rewrites aspects of your code.</li>
+<li>The transpiled code is run. Variable modification function calls are tracked in a graph data structure.</li>
+<li>p5.strands generates GLSL code from that graph.</li>
+</ol></il>
 
-  prevBox = styledText("<span class='highlight'>Define behavior with hooks</span>", width/2, height/3*2-20, true, true, false);
-  
-  hook.forEach((item, i) => {
-    prevBox = styledText(item, prevBox[0], prevBox[1] + prevBox[3], true, true, true);
-  });
-}
+<li><a href="https://beta.p5js.org/contribute/webgl_mode_architecture/">WebGL mode architecture</a> and <a href="https://beta.p5js.org/contribute/webgl_contribution_guide/">WebGL contribution guide</a></li>
+<li><a href="https://beta.p5js.org/contribute/webgpu/">Using WebGPU mode
+</a> (experimental): "So far, the renderers in p5.js can be grouped into 2D and 3D-capable renderers. Initially, there was one renderer for each: the default 2D mode and WebGL mode. The initial goal for WebGPU mode is to be an equivalent of WebGL mode: anything it can do, WebGPU mode aims to also be able to do. But that is also just the starting point. We view WebGPU mode as a way to give new tools to artists as technology advances, and as a way to ensure p5.js stays up-to-date with browser technology for the next decade."</li>
+  </ul>
+</li>
+</ol>
 
-function draw() {
-  background(0);
-  selectAll('p:not(.sticky)').forEach(p => p.remove());
-
-  noStroke();
-  
-  let currentBuild = "";
-  let currentUse = "";
-  let currentHook = "";
-  
-  highlightHovered(hoverText);
-
-  if (hoverText in build) {
-    currentBuild = hoverText;
-    let items = build[hoverText];
-    currentUse = items.find(item => use.includes(item));
-    currentHook = items.find(item => hook.includes(item));
-  }
-
-  if (use.includes(hoverText)) {
-    currentUse = hoverText;
-    // Find which build contains this use
-    for (let k in build) {
-      if (build[k].includes(hoverText)) {
-        currentBuild = k;
-        currentHook = build[k].find(item => hook.includes(item));
-        break;
-      }
-    }
-  }
-
-  if (hook.includes(hoverText)) {
-    currentHook = hoverText;
-    // Find which build contains this hook
-    for (let k in build) {
-      if (build[k].includes(hoverText)) {
-        currentBuild = k;
-        currentUse = build[k].find(item => use.includes(item));
-        break;
-      }
-    }
-  }
-  
-  if (currentBuild && currentUse && currentHook) {
-    
-    if (currentHook === "getTexture()"){
-        currentHook = "  filterColor.begin();\n  let c = getTexture(\n    filterColor.canvasContent,\n    filterColor.texCoord\n    );\n  filterColor.set(...);\n  filterColor.end();"
-      }
-  else if (currentHook === "getTexture() with uniformTexture"){
-        currentHook = "  ....begin();\n  const textInput = uniformTexture(...);\n  ....end();"
-    }
-    else if (currentHook === "filterColor"){
-      currentHook = "  filterColor.begin();\n  filterColor.set([1, 0, 0, 1]);\n  filterColor.end();"
-    }
-    else if (currentHook !== "instanceID()"){
-      currentHook = "  "+currentHook+".begin();\n  ...\n  "+currentHook+".end();"
-    }
-
-    currentBuild = currentBuild.slice(0, -2) + "(<span class='highlight'>myShaderBuilder</span>);";
-
-    currentUse = "  " + currentUse.slice(0, -2) + "(<span class='highlight'>myShader</span>);";
+<h1>p5.js v2 @ Libre Graphics Meeting 2026</h1>
 
 
-    if (currentHook === "instanceID()"){
-      currentBuild += "\n  instance = buildGeometry(...);"
-      currentUse += "\n  model(instance, 50);"
-      currentHook = "  worldInputs.begin();\n  let progress = instanceID();\n  ...\n  worldInputs.end();"
-    }
+<p class="sticky"><em>The web-based talk slides are available <a href=http://ksen0.github.io/lgm2026/talk>here</a>; you can also see all the <a href=https://github.com/ksen0/lgm2026/tree/main/src/snippets>code snippets from the talk</a>. This presentation was made on Chrome web browser, with ~1470x832 suggested dimension for the sketches. The talk website might work to a limited degree on other devices, browsers, and window dimensions.</em></p>
+<p class="sticky">For over a decade, p5.js has helped learners to make algorithmic art on the web. p5.js is community-driven, prioritizes access and inclusion, and makes coding beginner-friendly by requiring as little prior knowledge as possible to get hands-on, while supporting continued learning.</p>
+<p class="sticky">How can a beginner-friendly shader programming API address the challenges that learners face? The parallel computation model of GPUs differs from the sequential model of CPUs, and is shaped by historical development of graphics APIs under fast-changing hardware constraints. Programming shaders relies on knowledge about graphics pipelines, target platforms, and sometimes historical quirks.</p>
+<p class="sticky">We set out to design a shader creative coding experience for scaffolded learning. We present p5.strands, which allows getting started with shaders using the familiar syntactic and conceptual vocabulary of p5.js sketches. It can be used in p5.js v2 sketches, and works by transpiling JavaScript to GLSL.</p>
+<p class="sticky">A p5.strands shader does not explicitly specify a full rendering pipeline. Instead, it describes modifications to a default shader. A shader author is not required to understand how every shape is positioned on the screen, or how all lighting is calculated. The code below shows a shader adding a per-pixel noise texture:</p>
 
-    const arrowHeight= 10;
+<pre>
+function noiseTexture() &#123;
+  pixelInputs.begin();
+  pixelInputs.color.rgb *= noise(pixelInputs.texCoord * 5);
+  pixelInputs.end();
+&#125;
 
-    let builderBox = styledText("<pre>let <span class='highlight'>myShader</span>;\nfunction setup(){\n  createCanvas(100, 100, WEBGL);\n  <span class='highlight'>myShader</span> = "+currentBuild+"\n  ...\n}</pre>", 0, 0);
+material = buildMaterialShader(noiseTexture);
 
-    let usageBox = styledText("<pre>function draw(){\n"+currentUse+"\n  ...\n}</pre>", 0, builderBox[1] + builderBox[3] + arrowHeight);
+shader(material);
+sphere(50);
+</pre>
 
-    let functionBox = styledText("<pre>function <span class='highlight'>myShaderBuilder</span>(){\n"+currentHook+"\n}</pre>", 0, usageBox[1] + usageBox[3] + arrowHeight);
-    
-        
-    fill(255, 0, 230, 30);
-    rect(...builderBox);
-    rect(...usageBox);
-    rect(...functionBox);
-    //boxArrow(builderBox, usageBox);
-    //boxArrow(builderBox, functionBox);
-    fill(255);
-  }
-  
-}
+<p class="sticky">Writing shaders is possible without reference to vertex or fragment shaders, uniforms, attributes, GLSL data types, or GLSL itself. These concepts are intentionally introduced incrementally. Uniforms, for example, can be introduced when an effect needs additional information, but they are not required to get started.</p>
 
-function styledText(content, x, y, sticky, highlighted, hoverable){
-  const padding = 5;
-  let p = createP(content);
-  
-  p.position(x, y);
-  p.style('font-family', 'Space Grotesk');
-  p.style('font-weight', '300');
-  p.style('font-size', '18px');
-  p.style('color', '#fff');
-  p.style('margin', '0');
-  p.style('padding', '0');
-  
-  if (sticky === true) {
-    p.addClass('sticky');
-  }
-  if (highlighted === true) {
-    p.addClass('highlight');
-  }
-  if (hoverable === true) {
-    p.attribute('data-content', content);
-    p.mouseOver(() => hoverText = p.html());
-    //p.mouseOut(() => {
-    //  hoverText = hoverText === p.html() ? '' : hoverText
-    //});
-  }
-  
-  return [
-    x,
-    y,
-    p.elt.offsetWidth,
-    p.elt.offsetHeight
-  ];
-}
+<p class="sticky">We rely on community feedback to test assumptions and focus development efforts. This presentation introduces both the API design so far, the process to get there, and next steps for this beginner-friendly shader programming project.</p>
 
-function highlightHovered(hoverText){
-if (hoverText) {
-  let related = [hoverText];
-  
-  if (hoverText in build) {
-    // Hovering a build: highlight its uses and hooks only
-    related.push(...build[hoverText]);
-  } else if (use.includes(hoverText)) {
-    // Hovering a use: highlight builds and hooks that use it
-    for (let k in build) {
-      if (build[k].includes(hoverText)) {
-        related.push(k);
-        build[k].forEach(item => {
-          if (hook.includes(item)) related.push(item);
-        });
-      }
-    }
-  } else if (hook.includes(hoverText)) {
-    // Hovering a hook: highlight builds and uses that use it
-    for (let k in build) {
-      if (build[k].includes(hoverText)) {
-        related.push(k);
-        build[k].forEach(item => {
-          if (use.includes(item)) related.push(item);
-        });
-      }
-    }
-  }
-  
-  selectAll('.sticky').forEach(p => {
-    let content = p.attribute('data-content');
-    if (related.includes(content)) {
-      p.addClass('brush');
-    } else {
-      p.removeClass('brush');
-    }
-  });
-}
-}
 
-    </script>
+</div>
   </body>
 </html>
