@@ -1,6 +1,4 @@
-Adjusting Positions with a Shader: Created by Dave Pagurek. Edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
-
-
+// Adjusting Positions with a Shader: Created by Dave Pagurek. Edited and maintained by p5.js Contributors and Processing Foundation. Licensed under CC BY-NC-SA 4.0.
 
 let wiggleShader;
 
